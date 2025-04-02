@@ -34,37 +34,37 @@ export default function BookingPage() {
 
               <div className="space-y-6 w-full max-w-lg">
                 <FeatureItem
-                  icon="/assets/high-quality.svg"
+                  icon="/assets/high-quality.png"
                   title="HIGH-QUALITY SERVICES"
                   description="Provide high-quality cleaning and repair services that meet landlord and buyer expectations."
                 />
 
                 <FeatureItem
-                  icon="/assets/convenient.svg"
+                  icon="/assets/convenient.png"
                   title="CONVENIENT & EFFICIENT SOLUTIONS"
                   description="Offer a convenient and efficient solution for renters, sellers, and realtors."
                 />
 
                 <FeatureItem
-                  icon="/assets/expand.svg"
+                  icon="/assets/expand.png"
                   title="EXPAND ACROSS CANADA"
                   description="Expand operations across major Canadian cities through a scalable franchise model."
                 />
 
                 <FeatureItem
-                  icon="/assets/efficient.svg"
+                  icon="/assets/efficient.png"
                   title="EFFICIENT TEAM"
                   description="Establish a reputation as the go-to service for move-out and pre-sale property preparation."
                 />
 
                 <FeatureItem
-                  icon="/assets/eco.svg"
+                  icon="/assets/eco.png"
                   title="ECHO FRIENDLY"
                   description="Maintain environmentally friendly cleaning practices."
                 />
 
                 <FeatureItem
-                  icon="/assets/partnership.svg"
+                  icon="/assets/partnership.png"
                   title="STRONG PARTNERSHIP"
                   description="Build strong relationships with realtors, property managers, and landlords for consistent growth."
                 />
@@ -81,7 +81,7 @@ function FeatureItem({ icon, title, description }: { icon: string; title: string
   return (
     <div className="flex gap-4 items-start">
       <div className="shrink-0">
-        <Image src={icon || "/placeholder.svg"} alt={title} width={50} height={50} className="object-contain" />
+        <Image src={icon || "/placeholder.png"} alt={title} width={50} height={50} className="object-contain" />
       </div>
       <div>
         <h3 className="font-bold">{title}</h3>
