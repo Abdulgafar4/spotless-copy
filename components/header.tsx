@@ -31,7 +31,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/assets/logo.png"
+              src="/logo.svg"
               alt="Spotless Transitions Logo"
               width={180}
               height={40}

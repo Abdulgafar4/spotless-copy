@@ -12,7 +12,7 @@ function Hero() {
           <div className="space-y-6 md:space-y-8 px-4 md:px-8 lg:pl-16">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <Image
-                src="/assets/hero/icon.png"
+                src="/assets/hero/icon.svg"
                 alt="Spotless Transitions Logo"
                 width={60}
                 height={60}

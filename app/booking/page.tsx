@@ -34,37 +34,37 @@ export default function BookingPage() {
 
               <div className="space-y-6 w-full max-w-lg">
                 <FeatureItem
-                  icon="/assets/high-quality.png"
+                  icon="/assets/high-quality.svg"
                   title="HIGH-QUALITY SERVICES"
                   description="Provide high-quality cleaning and repair services that meet landlord and buyer expectations."
                 />
 
                 <FeatureItem
-                  icon="/assets/convenient.png"
+                  icon="/assets/convenient.svg"
                   title="CONVENIENT & EFFICIENT SOLUTIONS"
                   description="Offer a convenient and efficient solution for renters, sellers, and realtors."
                 />
 
                 <FeatureItem
-                  icon="/assets/expand.png"
+                  icon="/assets/expand.svg"
                   title="EXPAND ACROSS CANADA"
                   description="Expand operations across major Canadian cities through a scalable franchise model."
                 />
 
                 <FeatureItem
-                  icon="/assets/efficient.png"
+                  icon="/assets/efficient.svg"
                   title="EFFICIENT TEAM"
                   description="Establish a reputation as the go-to service for move-out and pre-sale property preparation."
                 />
 
                 <FeatureItem
-                  icon="/assets/eco.png"
+                  icon="/assets/eco.svg"
                   title="ECHO FRIENDLY"
                   description="Maintain environmentally friendly cleaning practices."
                 />
 
                 <FeatureItem
-                  icon="/assets/partnership.png"
+                  icon="/assets/partnership.svg"
                   title="STRONG PARTNERSHIP"
                   description="Build strong relationships with realtors, property managers, and landlords for consistent growth."
                 />
