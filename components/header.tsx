@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,19 +39,19 @@ export default function Header() {
             />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="flex items-center gap-6">
             {!user ? navLinks.map((link, index) => (
               <Link
                 key={index}
                 href={link.href}
-                className="font-medium hover:text-green-500"
+                className="font-medium hover:text-green-500 hidden lg:flex"
               >
                 {link.label}
               </Link>
             )) : 
             <Link
             href={'/dashboard'}
-            className="font-medium hover:text-green-500"
+            className="font-medium hover:text-green-500 hidden sm:flex"
           >
             Dashboard
           </Link>
@@ -88,7 +87,7 @@ export default function Header() {
 
             <Button
               asChild
-              className="bg-green-500 hover:bg-green-600 text-white"
+              className="bg-green-500 hover:bg-green-600 text-white hidden sm:flex"
             >
               <Link href="/booking">BOOK A CLEANING</Link>
             </Button>

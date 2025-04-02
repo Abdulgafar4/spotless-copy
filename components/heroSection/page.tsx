@@ -7,10 +7,10 @@ import { Star } from "lucide-react";
 function Hero() {
   return (
     <div className="container mx-auto px-4 md:px-6 mt-24">
-      <section className="bg-green-100 py-20 relative rounded-xl mt-10 overflow-hidden">
+      <section className="bg-green-100 py-10 md:py-20 relative rounded-xl mt-6 md:mt-10 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
-          <div className="space-y-8 pl-16">
-            <div className="flex items-center gap-4">
+          <div className="space-y-6 md:space-y-8 px-4 md:px-8 lg:pl-16">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <Image
                 src="/assets/hero/icon.png"
                 alt="Spotless Transitions Logo"
@@ -18,36 +18,35 @@ function Hero() {
                 height={60}
               />
               <div>
-                <div className="text-sm font-medium text-gray-600">
+                <div className="text-xs sm:text-sm font-medium text-gray-600 mt-2 sm:mt-0">
                   CLEANING SERVICES TAILORED TO YOUR NEEDS
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
                   <span className="text-green-500">SPOTLESS</span> TRANSITIONS
                 </h1>
               </div>
             </div>
 
-            <p className="text-xl font-medium text-gray-700">
+            <p className="text-lg md:text-xl font-medium text-gray-700">
               MOVE-IN & MOVE-OUT CLEANING + REPAIRS
-              <br />
+              <br className="hidden sm:block" />
               ACROSS MULTIPLE LOCATIONS!
             </p>
 
-            <div className="flex flex-row gap-6">
+            <div className="flex flex-col sm:flex-row gap-6">
               <div>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <div className="bg-green-500 h-5 w-5 rounded-sm flex items-center">
+                    <div key={star} className="bg-green-500 h-4 w-4 sm:h-5 sm:w-5 rounded-sm flex items-center">
                       <Star
-                        key={star}
-                        className="h-3 w-3 fill-orange-300 text-orange-300 mx-auto"
+                        className="h-2 w-2 sm:h-3 sm:w-3 fill-orange-300 text-orange-300 mx-auto"
                       />
                     </div>
                   ))}
-                  <span className="font-bold ml-2 text-lg">EXCELLENT</span>
+                  <span className="font-bold ml-2 text-base sm:text-lg">EXCELLENT</span>
                 </div>
 
-                <div className="text-sm">
+                <div className="text-xs sm:text-sm mt-1">
                   <span className="text-gray-600">
                     BASED ON
                     <span className="text-green-500 px-1">20K</span>
@@ -57,14 +56,14 @@ function Hero() {
               </div>
               <Button
                 asChild
-                className="bg-green-400 hover:bg-green-500 text-white text-sm px-6 py-6"
+                className="bg-green-400 hover:bg-green-500 text-white text-sm px-4 py-5 sm:px-6 sm:py-6 self-start mt-2 sm:mt-0"
               >
                 <Link href="/booking">BOOK A CLEANING</Link>
               </Button>
             </div>
           </div>
 
-          <div className="hidden lg:block">
+          <div className="hidden lg:block relative h-full">
             <div className="absolute right-0 top-0 z-0">
               <Image
                 src="/assets/hero/Shape.png"
@@ -74,12 +73,12 @@ function Hero() {
                 className="w-auto object-cover"
               />
             </div>
-            <div className="absolute right-0 bottom-16 z-10 h-full">
+            <div className="absolute right-0 bottom-0 z-10 h-full">
               <Image
                 src="/assets/hero/people.png"
                 alt="Cleaning professionals"
-                width={600}
-                height={600}
+                width={500}
+                height={500}
                 className="object-contain"
                 priority
               />

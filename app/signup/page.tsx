@@ -17,7 +17,7 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { Eye, EyeOff, User, Mail, Phone, Lock } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Phone, Lock, Check } from "lucide-react";
 import PageHeader from "@/components/page-header";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -82,7 +82,7 @@ export default function SignupPage() {
 
   const onSubmit = async (data: SignupFormValues) => {
     const { email, password, firstName, lastName, phone } = data;
-  
+
     const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
@@ -94,14 +94,16 @@ export default function SignupPage() {
         },
       },
     });
-  
+
     if (error) {
       toast.error(`Signup failed: ${error.message}`);
       return;
     }
-  
+
     console.log("Signup successful:", signUpData);
-    toast.success("Signup successful! Please confirm your email to activate your account.");
+    toast.success(
+      "Signup successful! Please confirm your email to activate your account."
+    );
     router.push("/login");
   };
 
@@ -128,17 +130,37 @@ export default function SignupPage() {
                 className="mb-6"
               />
               <h3 className="text-xl font-bold text-[#10b981] mb-4">
-                WHY JOINING US
+                WHY JOIN US
               </h3>
-              <p className="text-gray-700 mb-6">
-                Join our community and gain access to exclusive features and
-                content.
+              <p className="text-gray-700 my-6">
+                Our expert team applies Design Thinking to help you design
+                products and services that genuinely meet customer demands.
+                Through research, ideation, and prototyping, we create solutions
+                that work.
               </p>
-              <ul className="space-y-2 ml-4 list-disc text-gray-600">
-                <li>Real-time collaboration and tracking</li>
-                <li>Access to exclusive dashboards</li>
-                <li>Secure and scalable data management</li>
+
+              {/* Mapped list items */}
+              <ul className="space-y-4 ml-4">
+                {[
+                  "Align your product with user insights and market demand",
+                  "Minimize risks by testing ideas early",
+                  "Innovate ahead of your competition",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-center gap-2">
+                    <div className="bg-[#10b981] rounded-full p-1 flex items-center justify-center">
+                      <Check size={16} color="white" />
+                    </div>
+                    <span>{item}</span>
+                  </li>
+                ))}
               </ul>
+
+              {/* Fixed the duplicate paragraph content */}
+              <p className="text-gray-700 mt-6">
+                Our collaborative approach ensures your team builds the
+                capabilities to continue innovating long after our engagement
+                ends.
+              </p>
             </div>
 
             {/* Right Side - Form */}
