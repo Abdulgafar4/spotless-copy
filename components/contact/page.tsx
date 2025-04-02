@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Mail, MapPin, Pen, Phone } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/hooks/use-auth';
 
 
 // Define validation schema with Zod
@@ -37,6 +38,7 @@ function ContactSection() {
     message: ''
   });
   
+  const {user } = useAuth()
   // Validation errors state
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -86,7 +88,6 @@ function ContactSection() {
     }
   };
   
-
   // Form submission with Supabase
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -116,14 +117,13 @@ function ContactSection() {
             phone: formData.phone || null,
             subject: formData.subject,
             message: formData.message,
-            // submitted_at: submittedAt,
-            // status: 'new'
+            user_id: user.id
           }
         ]);
         
-      // if (error) {
-      //   throw new Error(error.message);
-      // }
+      if (error) {
+        throw new Error(error.message);
+      }
       
       // Clear form after successful submission
       setFormData({
