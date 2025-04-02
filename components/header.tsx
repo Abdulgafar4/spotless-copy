@@ -20,10 +20,10 @@ export default function Header() {
 
   const navLinks = [
     { href: "/", label: "HOME" },
-    { href: "#services", label: "SERVICES" },
-    { href: "#our-facilities", label: "OUR FACILITIES" },
-    { href: "#gallery", label: "GALLERY" },
-    { href: "#contact-us", label: "CONTACT US" },
+    { href: "/#services", label: "SERVICES" },
+    { href: "/#our-facilities", label: "OUR FACILITIES" },
+    { href: "/#gallery", label: "GALLERY" },
+    { href: "/#contact-us", label: "CONTACT US" },
   ];
   return (
     <header className="bg-white py-4 border-b fixed top-0 left-0 right-0 z-20 mb-40">
