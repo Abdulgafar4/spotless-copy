@@ -24,17 +24,13 @@ export const AuthProvider = ({ children }: any) => {
     };
   }, []);
 
-  useEffect(() => {
-    if (user && (pathname === '/login' || pathname === '/signup')) {
-      router.push('/dashboard');
-    } else if (!user && (pathname === '/dashboard' || pathname === '/booking')) {
-      router.push('/login');
-    }
-  }, [user, pathname, router]); 
-
 
   const logout = async () => {
     await supabase.auth.signOut();
+  
+    document.cookie = "auth-token=; path=/; max-age=0";
+    document.cookie = "role=; path=/; max-age=0";
+  
     setUser(null);
     router.push('/');
   };

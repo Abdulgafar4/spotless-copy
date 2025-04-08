@@ -21,7 +21,7 @@ function WhyUs() {
         <div className='space-y-2 sm:space-y-4'>
           <h3 className="text-lg sm:text-xl md:text-2xl font-medium text-gray-600">WHY US</h3>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-green-500">
-            WHY CHOOSE SPOTLESS TRANSITIONS
+            WHY CHOOSE SPOTLESS TRANSITION
           </h2>
         </div>
         <p className="text-gray-600 text-sm sm:text-base md:text-lg">

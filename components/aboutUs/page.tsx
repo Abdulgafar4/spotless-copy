@@ -79,7 +79,7 @@ const AboutUs: React.FC = () => {
         </div>
         <div className="space-y-4 sm:space-y-6 flex flex-col justify-between">
           <h2 className="text-2xl sm:text-3xl font-bold">
-            <span className="text-green-500 font-serif">SPOTLESS TRANSITIONS</span>
+            <span className="text-green-500 font-serif">SPOTLESS TRANSITION</span>
             <br />
             <span className="text-xl sm:text-2xl font-light">
               CLEANING AND REPAIR SERVICES

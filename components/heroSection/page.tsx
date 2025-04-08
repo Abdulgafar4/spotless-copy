@@ -22,7 +22,7 @@ function Hero() {
                   CLEANING SERVICES TAILORED TO YOUR NEEDS
                 </div>
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-                  <span className="text-green-500">SPOTLESS</span> TRANSITIONS
+                  <span className="text-green-500">SPOTLESS</span> TRANSITION
                 </h1>
               </div>
             </div>
