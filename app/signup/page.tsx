@@ -68,7 +68,7 @@ export default function SignupPage() {
           firstName,
           lastName,
           phone,
-          role: userRole
+          user_role: userRole
         },
       },
     });

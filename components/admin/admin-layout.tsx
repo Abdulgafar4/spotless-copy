@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import React from "react"
-import { usePathname } from "next/navigation"
-import PageHeader from "../page-header"
-import SidebarCard from "@/components/admin/sidebar"
+import React from "react";
+import { usePathname } from "next/navigation";
+import PageHeader from "../page-header";
+import SidebarCard from "@/components/admin/sidebar";
 import {
   BarChart3,
   Building,
@@ -12,15 +12,15 @@ import {
   Mail,
   FileText,
   Star,
-  Settings
-} from "lucide-react"
+  Settings,
+} from "lucide-react";
 
 interface AdminLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const navigation = [
     { name: "Dashboard", href: "/admin", icon: BarChart3 },
@@ -31,30 +31,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: "Reports", href: "/admin/reports", icon: FileText },
     { name: "Feedback", href: "/admin/feedback", icon: Star },
     { name: "Settings", href: "/admin/settings", icon: Settings },
-  ]
+  ];
 
-  const currentPage = navigation.find(nav =>
-    pathname === nav.href 
-  )
+  const currentPage = navigation.find((nav) => pathname === nav.href);
 
-  const title = currentPage?.name || "Unknown"
-  const headerHref = currentPage?.href || pathname
+  const title = currentPage?.name || "Unknown";
+  const headerHref = currentPage?.href || pathname;
 
   const breadcrumbs = [
     { label: "ADMIN", href: "/admin" },
     { label: title.toUpperCase(), href: headerHref, current: true },
-  ]
+  ];
 
-  
   return (
     <div className="min-h-screen mt-28">
       <div className="md:container mx-auto">
         <PageHeader title={title} breadcrumbs={breadcrumbs} />
-        <main className="p-6 flex flex-row gap-8">
-          <SidebarCard />
-          {children}
+        <main className="flex flex-col lg:flex-row p-4 gap-4">
+          <div className="w-1/4">
+            <SidebarCard />
+          </div>
+
+          <div className="w-full lg:w-3/4">{children}</div>
         </main>
       </div>
     </div>
-  )
+  );
 }

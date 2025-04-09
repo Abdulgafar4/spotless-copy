@@ -11,13 +11,13 @@ import {
 import { User, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
-import { getAdminNavigation } from "./admin/adminDummyData"
-import { cn } from "@/lib/utils"
-import { usePathname } from "next/navigation"
-import { clientNavigation } from "./dashboard/clientDummyData"
+import { getAdminNavigation } from "./admin/adminDummyData";
+import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
+import { clientNavigation } from "./dashboard/clientDummyData";
 
 export default function Header() {
-  const { logout, user } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -25,11 +25,7 @@ export default function Header() {
   // Handle scroll effect for header
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 10);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -51,9 +47,25 @@ export default function Header() {
     setMobileMenuOpen(false);
   };
 
+  // Determine which navigation items to show based on path and user status
+  const getNavigationItems = () => {
+    if (pathname.startsWith("/admin")) {
+      return getAdminNavigation();
+    } else if (pathname.startsWith("/dashboard")) {
+      return clientNavigation;
+    }
+    return null;
+  };
+
+  const navItems = getNavigationItems();
+
+  const isAdminPage = pathname.startsWith("/admin");
+  const isDashboardPage = pathname.startsWith("/dashboard");
+  const isMainPage = !isAdminPage && !isDashboardPage;
+
   return (
     <header
-      className={`bg-white py-4 border-b fixed top-0 left-0 right-0 z-20 w-full transition-all duration-300 ${
+      className={`bg-white border-b fixed top-0 left-0 right-0 z-20 w-full transition-all duration-300 ${
         scrolled ? "shadow-md py-2" : "py-4"
       }`}
     >
@@ -84,23 +96,23 @@ export default function Header() {
               ))
             ) : (
               <>
-              <Link
-                href={"/dashboard"}
-                className="font-medium text-lg hover:text-green-500 transition-colors duration-200"
-                onClick={handleNavLinkClick}
-              >
-                Dashboard
-              </Link>
-              {user?.role === "admin" && (pathname !== "/admin" && pathname !== "/admin/:path*") && (
-                <Link
-                  href={"/admin"}
-                  className="font-medium text-lg hover:text-green-500 transition-colors duration-200"
-                  onClick={handleNavLinkClick}
-                >
-                 Admin Dashboard 
-                </Link>
-              )}
-            </>
+                {user && !isDashboardPage && (
+                  <Link
+                    href="/dashboard"
+                    className="font-medium text-lg hover:text-green-500 transition-colors duration-200"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                {isAdmin && !isAdminPage && (
+                  <Link
+                    href="/admin"
+                    className="font-medium text-lg hover:text-green-500 transition-colors duration-200"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+              </>
             )}
           </nav>
 
@@ -114,9 +126,7 @@ export default function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 {user ? (
-                  <>
-                    <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
                 ) : (
                   <>
                     <DropdownMenuItem asChild>
@@ -129,14 +139,15 @@ export default function Header() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-           { user?.role !== "admin"  &&
-            <Button
-              asChild
-              className="bg-green-500 hover:bg-green-600 text-white hidden sm:flex"
-            >
-              <Link href="/booking">BOOK A CLEANING</Link>
-            </Button>
-}
+
+            {!isAdmin && (
+              <Button
+                asChild
+                className="bg-green-500 hover:bg-green-600 text-white hidden sm:flex"
+              >
+                <Link href="/booking">BOOK A CLEANING</Link>
+              </Button>
+            )}
 
             {/* Mobile menu button */}
             <Button
@@ -156,7 +167,7 @@ export default function Header() {
 
           {/* Mobile Navigation Menu */}
           <div
-            className={`fixed top-0 right-0 bottom-0  w-3/4 sm:w-2/5 bg-white z-10 pt-20 px-6 flex flex-col border-l shadow-lg transition-transform duration-300 ease-in-out ${
+            className={`fixed top-0 right-0 bottom-0 w-3/4 sm:w-2/5 bg-white z-10 pt-20 px-6 flex flex-col border-l shadow-lg transition-transform duration-300 ease-in-out ${
               mobileMenuOpen ? "translate-x-0" : "translate-x-full"
             } lg:hidden`}
           >
@@ -174,62 +185,29 @@ export default function Header() {
                 ))
               ) : (
                 <>
-                  {user?.role === "admin" && (pathname === "/admin") && (
-                    <>
-
-                              {getAdminNavigation().map((item) => (
-                                <Link
-                                  key={item.name}
-                                  href={item.href}
-                                  className={cn(
-                                    "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md",
-                                    pathname === item.href
-                                      ? "text-green-500"
-                                      : "text-gray-700 hover:text-green-500"
-                                  )}
-                                >
-                                  <item.icon className={"h-5 w-5 text-green-500"} />
-                                  {item.name}
-                                </Link>
-                              ))}
-                      </>
-                  )}
-                  {
-                    user && (pathname === "/dashboard") && (
-                      <>
-                      {clientNavigation.map((item) => (
-                                <Link
-                                  key={item.name}
-                                  href={item.href}
-                                  className={cn(
-                                    "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md",
-                                    pathname === item.href
-                                      ? "text-green-500"
-                                      : "text-gray-700 hover:text-green-500"
-                                  )}
-                                >
-                                  <item.icon className={"h-5 w-5 text-green-500"} />
-                                  {item.name}
-                                </Link>
-                              ))}
-                      </>
-                    )
-                  }
+                  {navItems &&
+                    navItems.map((item) => (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={cn(
+                          "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md",
+                          pathname === item.href
+                            ? "text-green-500"
+                            : "text-gray-700 hover:text-green-500"
+                        )}
+                        onClick={handleNavLinkClick}
+                      >
+                        <item.icon className="h-5 w-5 text-green-500" />
+                        {item.name}
+                      </Link>
+                    ))}
                 </>
               )}
-{user?.role === "admin" && (pathname !== "/admin" && pathname !== "/admin/:path*") && (
-                  <Button
-                  asChild
-                  className="bg-green-500 hover:bg-green-600 text-white mt-6 w-full"
-                >
-                  <Link href="/admin" onClick={handleNavLinkClick}>
-                    ADMIN DASHBOARD
-                  </Link>
-                </Button>
-)}
 
-{user && (pathname !== "/dashboard/:path*" && pathname !== "/dashboard") && (
-                  <Button
+              {/* Navigation buttons for mobile */}
+              {user && !isDashboardPage && (
+                <Button
                   asChild
                   className="bg-green-500 hover:bg-green-600 text-white mt-6 w-full"
                 >
@@ -237,18 +215,29 @@ export default function Header() {
                     DASHBOARD
                   </Link>
                 </Button>
-)}
+              )}
 
-              {user?.role !== "admin" &&
-              <Button
-                asChild
-                className="bg-green-500 hover:bg-green-600 text-white mt-6 w-full"
-              >
-                <Link href="/booking" onClick={handleNavLinkClick}>
-                  BOOK A CLEANING
-                </Link>
-              </Button>
-              }
+              {isAdmin && !isAdminPage && (
+                <Button
+                  asChild
+                  className="bg-green-500 hover:bg-green-600 text-white mt-6 w-full"
+                >
+                  <Link href="/admin" onClick={handleNavLinkClick}>
+                    ADMIN DASHBOARD
+                  </Link>
+                </Button>
+              )}
+
+              {!isAdmin && (
+                <Button
+                  asChild
+                  className="bg-green-500 hover:bg-green-600 text-white mt-6 w-full"
+                >
+                  <Link href="/booking" onClick={handleNavLinkClick}>
+                    BOOK A CLEANING
+                  </Link>
+                </Button>
+              )}
             </nav>
           </div>
         </div>

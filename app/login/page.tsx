@@ -57,7 +57,7 @@ export default function LoginPage() {
     const user = authData.user;
   
     if (session && user) {
-      const role = user?.role || "client";
+      const role = user?.user_metadata.user_role || "client";
   
       // Set cookies
       document.cookie = `auth-token=${session.access_token}; path=/; max-age=86400`;

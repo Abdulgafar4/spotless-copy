@@ -38,7 +38,7 @@ const branchFormSchema = z.object({
   manager: z.string().min(2, { message: "Manager name must be at least 2 characters" }),
   status: z.enum(["active", "inactive", "pending"]),
   employees: z.coerce.number().min(0),
-  openDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+  opendate: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: "Please enter a valid date",
   }),
 })
@@ -72,7 +72,7 @@ export function AddBranchDialog({
       manager: "",
       status: "active",
       employees: 0,
-      openDate: new Date().toISOString().split('T')[0],
+      opendate: new Date().toISOString().split('T')[0],
     },
   })
 
@@ -86,7 +86,7 @@ export function AddBranchDialog({
         manager: branch.manager,
         status: branch.status,
         employees: branch.employees,
-        openDate: branch.openDate,
+        opendate: branch.opendate,
       })
     } else {
       form.reset({
@@ -96,7 +96,7 @@ export function AddBranchDialog({
         manager: "",
         status: "active",
         employees: 0,
-        openDate: new Date().toISOString().split('T')[0],
+        opendate: new Date().toISOString().split('T')[0],
       })
     }
   }, [form, branch, isEditMode, isOpen])
@@ -178,8 +178,7 @@ export function AddBranchDialog({
                 )}
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
+            <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
@@ -205,6 +204,8 @@ export function AddBranchDialog({
                   </FormItem>
                 )}
               />
+            <div className="grid grid-cols-2 gap-4">
+
               <FormField
                 control={form.control}
                 name="employees"
@@ -224,7 +225,7 @@ export function AddBranchDialog({
               />
               <FormField
                 control={form.control}
-                name="openDate"
+                name="opendate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Open Date</FormLabel>
@@ -239,6 +240,7 @@ export function AddBranchDialog({
                 )}
               />
             </div>
+            
             <DialogFooter className="mt-6">
               <Button 
                 type="button" 
