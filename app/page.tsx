@@ -1,19 +1,9 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  ArrowRight,
-  Instagram,
-  Twitter,
-  Facebook,
-} from "lucide-react";
-import Hero from "@/components/heroSection/page";
-import AboutUs from "../components/aboutUs/page";
-import Service from "@/components/service/page";
-import CTABanner from "@/components/CTABanner/page";
-import WhyUs from "@/components/whyus/page";
-import ContactSection from "@/components/contact/page";
+import Hero from "@/components/landingPage/heroSection/page";
+import AboutUs from "../components/landingPage/aboutUs/page";
+import Service from "@/components/landingPage/service/page";
+import CTABanner from "@/components/landingPage/CTABanner/page";
+import WhyUs from "@/components/landingPage/whyus/page";
+import ContactSection from "@/components/landingPage/contact/page";
 
 export default function Home() {
   return (

@@ -21,32 +21,8 @@ import { Eye, EyeOff, User, Mail, Phone, Lock, Check } from "lucide-react";
 import PageHeader from "@/components/page-header";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { SignupFormValues, signupSchema } from "@/model/signup-schema";
 
-// Zod validation schema
-const signupSchema = z
-  .object({
-    firstName: z
-      .string()
-      .min(2, { message: "First name must be at least 2 characters" }),
-    lastName: z
-      .string()
-      .min(2, { message: "Last name must be at least 2 characters" }),
-    email: z.string().email({ message: "Please enter a valid email address" }),
-    phone: z.string().min(10, { message: "Please enter a valid phone number" }),
-    password: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
-    confirmPassword: z.string(),
-    acceptTerms: z.boolean().refine((val) => val === true, {
-      message: "You must accept the terms and conditions",
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type SignupFormValues = z.infer<typeof signupSchema>;
 
 const stringFields: {
   name: keyof Omit<
@@ -77,11 +53,12 @@ export default function SignupPage() {
       password: "",
       confirmPassword: "",
       acceptTerms: false,
+      userRole: "client"
     },
   });
 
   const onSubmit = async (data: SignupFormValues) => {
-    const { email, password, firstName, lastName, phone } = data;
+    const { email, password, firstName, lastName, phone, userRole } = data;
 
     const { data: signUpData, error } = await supabase.auth.signUp({
       email,
@@ -91,6 +68,7 @@ export default function SignupPage() {
           firstName,
           lastName,
           phone,
+          user_role: userRole
         },
       },
     });
@@ -298,14 +276,6 @@ export default function SignupPage() {
                     CREATE ACCOUNT
                   </Button>
 
-                  {/* Google Signup */}
-                  {/* <Button
-                    type="button"
-                    onClick={googleSignup}
-                    className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white h-14 rounded-lg font-semibold"
-                  >
-                    SIGN UP WITH GOOGLE
-                  </Button> */}
 
                   <div className="text-center text-sm mt-4">
                     Already have an account?{" "}

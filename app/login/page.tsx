@@ -43,19 +43,38 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data: authData } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
-
+  
     if (error) {
-      toast.error(`"Login error:", ${error.message}`);
+      toast.error(`Login error: ${error.message}`);
       return;
     }
-
-    toast.success("Login successful!");
-    router.push("/dashboard");
+  
+    const session = authData.session;
+    const user = authData.user;
+  
+    if (session && user) {
+      const role = user?.user_metadata.user_role || "client";
+  
+      // Set cookies
+      document.cookie = `auth-token=${session.access_token}; path=/; max-age=86400`;
+      document.cookie = `role=${role}; path=/; max-age=86400`;
+  
+      // Redirect based on role
+      if (role === "admin") {
+        toast.success("Welcome, Admin!");
+        router.push("/admin");
+      } else {
+        toast.success("Login successful!");
+        router.push("/dashboard");
+      }
+    }
   };
+  
+  
 
 
   return (

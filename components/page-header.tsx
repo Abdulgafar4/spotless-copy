@@ -14,7 +14,7 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, breadcrumbs }: PageHeaderProps) {
   return (
-    <div className="bg-gray-100 py-6 mt-20 container rounded-xl">
+    <div className="bg-gray-100 py-6 mt-24 container rounded-xl ">
       <div className=" mx-auto px-4 md:px-6">
         <h1 className="text-2xl font-bold mb-2">{title}</h1>
 
