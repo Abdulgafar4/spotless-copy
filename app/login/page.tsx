@@ -78,7 +78,7 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex flex-col  mt-20">
+    <div className="flex flex-col mt-10">
       <PageHeader
         title="LOGIN"
         breadcrumbs={[
@@ -88,9 +88,9 @@ export default function LoginPage() {
       />
 
       <section className="py-12 my-16">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="hidden md:block">
+        <div className="container mx-auto px-2 md:px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="hidden lg:block">
               <Image
                 src="/assets/auth/Sign-in.png"
                 alt="Login Illustration"
@@ -105,7 +105,7 @@ export default function LoginPage() {
                 <h2 className="text-base font-medium text-gray-600 mb-1">
                   WELCOME BACK
                 </h2>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-2xl xl:text-3xl font-bold text-gray-900">
                   LOGIN TO YOUR ACCOUNT
                 </h1>
               </div>
@@ -197,7 +197,7 @@ export default function LoginPage() {
                     </Link>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col-reverse gap-6 md:flex-row items-center justify-between">
                     <FormField
                       control={form.control}
                       name="rememberMe"
