@@ -2,9 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
 import { usePathname } from "next/navigation"
 import { Home, FileText, Calendar, CreditCard, Clock, X, ImageIcon, User, Menu } from "lucide-react"
+import PageHeader from "../page-header"
+import ClientSidebar from "./sidebar"
 
 
 interface DashboardLayoutProps {
@@ -13,7 +14,6 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navigation = [
     { name: "DASHBOARD", href: "/dashboard", icon: Home, current: pathname === "/dashboard" },
@@ -57,12 +57,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     },
   ]
 
+  const currentPage = navigation.find((nav) => pathname === nav.href);
+
+  const title = currentPage?.name || "Unknown";
+  const headerHref = currentPage?.href || pathname;
+
+  const breadcrumbs = [
+    { label: "ADMIN", href: "/admin" },
+    { label: title.toUpperCase(), href: headerHref, current: true },
+  ];
+
   return (
-    <div className="min-h-screen mt-20">
-        <div className="flex flex-col flex-1 px-6">
-          <main className="flex-1">{children}</main>
-        </div>
+    <div className="min-h-screen mt-28">
+      <div className="md:container mx-auto px-4"> 
+        <PageHeader title={title} breadcrumbs={breadcrumbs} />
+        <main className="flex flex-col lg:flex-row gap-4">
+          <div className="w-full lg:w-1/4 mt-16"> 
+            <ClientSidebar  pathname={pathname}/>
+          </div>
+  
+          <div className="w-full lg:w-3/4 mt-16"> 
+            {children}
+          </div>
+        </main>
       </div>
-  )
+    </div>
+  );
 }
 

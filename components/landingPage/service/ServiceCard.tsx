@@ -1,7 +1,7 @@
 import React from "react";
-import { Card } from "../ui/card";
+import { Card } from "../../ui/card";
 import Image from "next/image";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { ChevronDown, MapPin } from "lucide-react";
 import Link from "next/link";
 

@@ -40,21 +40,17 @@ interface Customer {
 }
 
 interface Appointment {
-  id: string;
-  customer_id: string;
-  employee_id: string;
-  branch_id: string;
-  appointment_date: Date;
-  start_time: string;
-  end_time: string;
-  service_type: string;
-  notes?: string;
-  status: "scheduled" | "completed" | "cancelled" | "no-show";
-  created_at: Date;
-  updated_at?: Date;
-  customers?: Customer;
-  employees?: Employee;
-  branches?: Branch;
+  id: number
+  date: string
+  time: string
+  title: string
+  customer: string
+  phone: string
+  branch: string
+  address: string
+  status: 'confirmed' | 'pending' | 'cancelled'
+  duration: string
+  staff: string[]
 }
 
 interface AppointmentFilters {
@@ -69,4 +65,87 @@ interface EmployeeFilters {
   branch_id?: string;
   status?: string;
   role?: string;
+}
+
+// Types
+interface Booking {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  service: string;
+  branch: string;
+  date: string;
+  duration: string;
+  status: string;
+  assignedStaff?: string[];
+  amount: number;
+  address: string;
+  modified?: string;
+}
+
+interface StatusBadge {
+  bg: string;
+  text: string;
+  label: string;
+}
+
+interface StatusOption {
+  value: string;
+  label: string;
+}
+
+interface BookingAction {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  action: () => void;
+}
+
+interface ConfirmAction {
+  action: string;
+  title: string;
+  description: string;
+}
+
+interface BookingFiltersProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  statusFilter: string;
+  setStatusFilter: (filter: string) => void;
+  dateFilter: string;
+  setDateFilter: (filter: string) => void;
+  branchFilter: string;
+  setBranchFilter: (filter: string) => void;
+}
+
+interface BookingActionsProps {
+  booking: Booking;
+  onViewBooking: (booking: Booking) => void;
+  onUpdateStatus: (booking: Booking, status: string) => void;
+  onAssignStaff: (booking: Booking) => void;
+  onMessageCustomer: (booking: Booking) => void;
+}
+
+interface BookingRowProps extends BookingActionsProps {
+  booking: Booking;
+}
+
+interface BookingsTableProps {
+  paginatedBookings: Booking[];
+  filteredBookings: Booking[];
+  onViewBooking: (booking: Booking) => void;
+  onUpdateStatus: (booking: Booking, status: string) => void;
+  onAssignStaff: (booking: Booking) => void;
+  onMessageCustomer: (booking: Booking) => void;
+  searchTerm: string;
+  statusFilter: string;
+  dateFilter: string;
+  branchFilter: string;
+}
+
+interface BookingOverviewCardsProps {
+  bookings: Booking[];
+  upcomingBookings: number;
+  todayBookings: number;
+  countByStatus: Record<string, number>;
 }

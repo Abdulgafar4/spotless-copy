@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
-  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,14 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -41,7 +32,8 @@ import { AddBranchDialog } from "@/components/admin/branches/addBranch";
 import { DeleteConfirmDialog } from "@/components/admin/branches/deleteConfirm";
 import AdminLayout from "@/components/admin/admin-layout";
 import { useAdminBranches } from "@/hooks/use-branch";
-import { useAuth } from '@/hooks/use-auth';
+import { toast } from "sonner";
+import FilterDropdown from "@/components/shared/shared-filter";
 
 // Status badge component to reduce repetition
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
@@ -157,26 +149,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTerm, setSearchTerm }) => (
   </div>
 );
 
-// FilterDropdown component
-const FilterDropdown: React.FC = () => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="outline" className="flex-shrink-0">
-        <Filter className="mr-2 h-4 w-4" />
-        Filter
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem>All</DropdownMenuItem>
-      <DropdownMenuItem>Active</DropdownMenuItem>
-      <DropdownMenuItem>Inactive</DropdownMenuItem>
-      <DropdownMenuItem>Pending</DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
-
 // BranchesTable props interface
 interface BranchesTableProps {
   branches: Branch[];
@@ -246,7 +218,7 @@ export default function BranchesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 5;
-
+  const [statusFilter, setStatusFilter] = useState<string>("All");
 
   // Fetch branches when component mounts
   useEffect(() => {
@@ -254,13 +226,17 @@ export default function BranchesPage() {
   }, [fetchBranches]);
 
   // Filter branches based on search term
-  const filteredBranches = branches.filter(
-    (branch) =>
+  const filteredBranches = branches.filter((branch) => {
+    const matchesSearch =
       branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       branch.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      branch.manager.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      branch.manager.toLowerCase().includes(searchTerm.toLowerCase());
 
+    const matchesStatus =
+      statusFilter === "All" || branch.status === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus;
+  });
   // Pagination
   const totalPages = Math.ceil(filteredBranches.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -275,8 +251,10 @@ export default function BranchesPage() {
       await createBranch(newBranch);
       fetchBranches(); // Refresh the list
       setIsAddDialogOpen(false);
+      toast.success("New Branch Added Successfully");
     } catch (err) {
       console.error("Failed to create branch:", err);
+      toast.error("Failed to create branch:");
     }
   };
 
@@ -293,8 +271,10 @@ export default function BranchesPage() {
       fetchBranches(); // Refresh the list
       setIsAddDialogOpen(false);
       setSelectedBranch(null);
+      toast.success("Branch Updated Successfully");
     } catch (err) {
       console.error("Failed to update branch:", err);
+      toast.error("Failed to update branch");
     }
   };
 
@@ -311,8 +291,10 @@ export default function BranchesPage() {
         fetchBranches(); // Refresh the list
         setIsDeleteDialogOpen(false);
         setSelectedBranch(null);
+        toast.success("Branch Deleted Successfully");
       } catch (err) {
         console.error("Failed to delete branch:", err);
+        toast.error("Failed to delete branch");
       }
     }
   };
@@ -326,10 +308,14 @@ export default function BranchesPage() {
     <div className="flex flex-col items-center justify-center py-10 w-full">
       <AlertCircle className="h-10 w-10 text-gray-400 mb-4" />
       <h3 className="text-lg font-medium">No branches found</h3>
-      {!loading ? (<p className="text-gray-500 text-center mt-2">
-        No branches match your search criteria. Try adjusting your search or
-        create a new branch.{" "}
-      </p>) : (<div className="flex justify-center p-8">Loading branches...</div>)}
+      {!loading ? (
+        <p className="text-gray-500 text-center mt-2">
+          No branches match your search criteria. Try adjusting your search or
+          create a new branch.{" "}
+        </p>
+      ) : (
+        <div className="flex justify-center p-8">Loading branches...</div>
+      )}
 
       {error && (
         <div className="text-red-600 p-8 mt-24">Error: {error.message}</div>
@@ -339,7 +325,7 @@ export default function BranchesPage() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col space-y-6">
+      <div className="flex flex-col space-y-6 mt-10">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Branches Management
@@ -362,7 +348,14 @@ export default function BranchesPage() {
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
               />
-              <FilterDropdown />
+              <FilterDropdown
+                label="Filter by Status"
+                options={["All", "Active", "Inactive", "Pending"]}
+                onSelect={(filter) => {
+                  console.log("You selected:", filter);
+                  setStatusFilter(filter);
+                }}
+              />
             </div>
           </CardHeader>
 
@@ -376,7 +369,7 @@ export default function BranchesPage() {
                 />
               </div>
             ) : (
-                <EmptyState />
+              <EmptyState />
             )}
           </CardContent>
 

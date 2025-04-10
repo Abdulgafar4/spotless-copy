@@ -1,7 +1,7 @@
 import React from "react";
 import { services } from "./serviceData";
 import ServiceCard from "./ServiceCard";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 

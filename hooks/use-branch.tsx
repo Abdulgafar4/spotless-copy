@@ -94,19 +94,23 @@ export const useAdminBranches = (): UseAdminBranchesReturn => {
       if (!isAdmin) {
         throw new Error("Unauthorized: Admin access required");
       }
-
+  
       try {
         setLoading(true);
+  
+        // Exclude id from branchData
+        const { id: _ignoredId, ...safeBranchData } = branchData;
+  
         const { data, error: supabaseError } = await supabase
           .from("branches")
-          .update({ ...branchData, updated_at: new Date() })
+          .update({ ...safeBranchData })
           .eq("id", id)
           .select();
-
+  
         if (supabaseError) {
           throw supabaseError;
         }
-
+  
         const updatedBranch = data[0] as Branch;
         setBranches((prevBranches) =>
           prevBranches.map((branch) =>
@@ -126,6 +130,7 @@ export const useAdminBranches = (): UseAdminBranchesReturn => {
     },
     [isAdmin]
   );
+  
 
   // Delete a branch
   const deleteBranch = useCallback(
