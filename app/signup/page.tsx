@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen mt-20">
+    <div className="flex flex-col min-h-screen mt-10">
       <PageHeader
         title="SIGN UP"
         breadcrumbs={[
@@ -96,7 +95,7 @@ export default function SignupPage() {
       />
 
       <section className="py-12 my-16 container mx-auto">
-        <div className="px-4 md:px-6">
+        <div className="px-2 md:px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             {/* Left Side */}
             <div className="bg-white p-8 rounded-lg">
