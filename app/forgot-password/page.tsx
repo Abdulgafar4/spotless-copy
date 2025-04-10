@@ -17,8 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Mail } from "lucide-react";
 import PageHeader from "@/components/page-header";
-import { supabase } from '@/lib/supabaseClient';
-import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -28,6 +27,7 @@ type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { forgotPassword } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ForgotPasswordFormValues>({
@@ -39,28 +39,12 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     setIsSubmitting(true);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) {
-        toast.error(`Password reset error: ${error.message}`);
-        return;
-      }
-
-      toast.success("Password reset email sent! Please check your inbox.");
-      router.push("/login");
-    } catch (error) {
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    await forgotPassword(data.email);
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="flex flex-col mt-20">
+    <div className="flex flex-col mt-10">
       <PageHeader
         title="FORGOT PASSWORD"
         breadcrumbs={[
@@ -88,7 +72,7 @@ export default function ForgotPasswordPage() {
                 <h2 className="text-base font-medium text-gray-600 mb-1">
                   FORGOT PASSWORD
                 </h2>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-2xl xl:text-3xl font-bold text-gray-900">
                   RESET YOUR PASSWORD
                 </h1>
                 <p className="text-gray-600 mt-4">

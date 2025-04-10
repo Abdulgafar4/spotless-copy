@@ -37,6 +37,7 @@ export default function Header() {
     { href: "/#services", label: "SERVICES" },
     { href: "/#contact-us", label: "OUR LOCATIONS" },
     { href: "/#contact-us", label: "CONTACT US" },
+    { href: "/faq", label: "F.A.Qs" },
   ];
 
   const toggleMobileMenu = () => {

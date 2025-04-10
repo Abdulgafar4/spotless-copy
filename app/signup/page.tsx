@@ -94,7 +94,7 @@ export default function SignupPage() {
         ]}
       />
 
-      <section className="py-12 my-16 container mx-auto">
+      <section className="py-12 my-10 container mx-auto">
         <div className="px-2 md:px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             {/* Left Side */}

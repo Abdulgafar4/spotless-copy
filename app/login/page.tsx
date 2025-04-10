@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { z } from "zod";
@@ -18,8 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Eye, EyeOff, User } from "lucide-react";
 import PageHeader from "@/components/page-header";
-import { supabase } from '@/lib/supabaseClient';
-import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -30,8 +28,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const { login, loading } = useAuth();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,39 +41,8 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    const { error, data: authData } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
-  
-    if (error) {
-      toast.error(`Login error: ${error.message}`);
-      return;
-    }
-  
-    const session = authData.session;
-    const user = authData.user;
-  
-    if (session && user) {
-      const role = user?.user_metadata.user_role || "client";
-  
-      // Set cookies
-      document.cookie = `auth-token=${session.access_token}; path=/; max-age=86400`;
-      document.cookie = `role=${role}; path=/; max-age=86400`;
-  
-      // Redirect based on role
-      if (role === "admin") {
-        toast.success("Welcome, Admin!");
-        router.push("/admin");
-      } else {
-        toast.success("Login successful!");
-        router.push("/dashboard");
-      }
-    }
+    await login(data.email, data.password);
   };
-  
-  
-
 
   return (
     <div className="flex flex-col mt-10">
@@ -219,18 +186,11 @@ export default function LoginPage() {
                     <Button
                       type="submit"
                       className="w-40 bg-green-500 hover:bg-green-600 text-white"
+                      disabled={loading}
                     >
-                      LOGIN
+                      {loading ? "LOGGING IN..." : "LOGIN"}
                     </Button>
                   </div>
-
-                  {/* <Button
-                    type="button"
-                    onClick={googleLogin}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    LOGIN WITH GOOGLE
-                  </Button> */}
 
                   <div className="text-center text-sm">
                     Don&apos;t have an account?{" "}
