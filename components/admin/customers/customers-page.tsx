@@ -3,20 +3,14 @@
 import { useState } from "react"
 import {
   Search,
-  Filter,
   Mail,
   Phone,
   User,
-  Calendar,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
   Check,
-  X,
   CreditCard,
-  Building,
-  MapPin,
-  Plus,
   Download,
   Clock,
   ArrowUpDown,
@@ -36,7 +30,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -56,7 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import AdminLayout from "@/components/admin/admin-layout"
 import { CustomerDetailsDialog } from "@/components/admin/customers/customerDetails"
 
@@ -185,7 +178,7 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
-  const itemsPerPage = 5
+  const itemsPerPage = 10;
 
   // Filter customers based on search term and status
   const filteredCustomers = customers.filter(customer => {

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import { Award, Building } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useAdminBranches } from "@/hooks/use-branch"
 
 interface AssignRoleDialogProps {
   isOpen: boolean
@@ -42,6 +43,12 @@ export function AssignRoleDialog({
   const [selectedBranch, setSelectedBranch] = useState("")
   const [isRoleChanged, setIsRoleChanged] = useState(false)
   const [isBranchChanged, setIsBranchChanged] = useState(false)
+    
+  const { fetchBranches, branches: employeeBranch } = useAdminBranches()
+    
+      useEffect(() => {
+        fetchBranches()
+      }, [fetchBranches])
   
   // Initialize selections when dialog opens
   useEffect(() => {
@@ -94,13 +101,13 @@ export function AssignRoleDialog({
         <div className="flex items-center gap-4 my-4">
           <Avatar className="h-12 w-12">
             <AvatarFallback>
-              {employee.firstName[0]}{employee.lastName[0]}
+              {employee.first_name[0]}{employee.last_name[0]}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-medium">{employee.firstName} {employee.lastName}</div>
+            <div className="font-medium">{employee.first_name} {employee.last_name}</div>
             <div className="text-sm text-gray-500">
-              Current Role: {employee.role} | Branch: {employee.branch}
+              Current Role: {employee.role} | Branch: {employeeBranch.find((b: any) => b.id === employee.branch_id)?.name || "N/A"}
             </div>
           </div>
         </div>

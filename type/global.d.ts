@@ -18,11 +18,11 @@ interface Employee {
   id: string;
   first_name: string;
   last_name: string;
-  email?: string;
-  phone?: string;
+  email: string;
+  phone: string;
   branch_id: string;
   role: string;
-  status: "active" | "inactive";
+  status: "active" | "inactive" | any;
   auth_id?: string;
   created_at: Date;
   updated_at?: Date;
@@ -148,4 +148,24 @@ interface BookingOverviewCardsProps {
   upcomingBookings: number;
   todayBookings: number;
   countByStatus: Record<string, number>;
+}
+
+type ServiceStatus = "active" | "inactive" | "seasonal";
+
+interface ServiceStatusBadgeProps {
+  status: ServiceStatus;
+}
+
+interface Service {
+  id: any;
+  name: string;
+  description: string;
+  duration: string;
+  price: string;
+  category: string;
+  status: ServiceStatus;
+  staffRequired: string;
+  createdAt?: string;
+  updatedAt?: string;
+  imageUrl?: string;
 }

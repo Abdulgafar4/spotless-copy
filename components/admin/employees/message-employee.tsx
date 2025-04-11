@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -22,12 +22,13 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { useAdminBranches } from "@/hooks/use-branch"
 
 interface MessageEmployeeDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   employee: any
-  onSendMessage: (message: string) => void
+  onSendMessage: (email: string, subject: string, body: string) => void
 }
 
 // Template options
@@ -113,6 +114,12 @@ export function MessageEmployeeDialog({
   const [sendEmail, setSendEmail] = useState(true)
   const [sendSMS, setSendSMS] = useState(false)
   
+    const { fetchBranches, branches } = useAdminBranches()
+  
+    useEffect(() => {
+      fetchBranches()
+    }, [fetchBranches])
+  let subject;
   // Handle template selection
   const handleTemplateChange = (template: string) => {
     setSelectedTemplate(template);
@@ -121,17 +128,30 @@ export function MessageEmployeeDialog({
     
     // Replace placeholders with actual data if employee exists
     if (employee) {
-      content = content.replace(/{{firstName}}/g, employee.firstName);
+      content = content.replace(/{{first_name}}/g, employee.first_name);
     }
     
     setMessageContent(content);
   };
   
+  const getSubject = (template: string) => {
+    switch (template) {
+      case "schedule": return "Schedule Update";
+      case "assignment": return "New Assignment";
+      case "meeting": return "Team Meeting";
+      case "feedback": return "Performance Feedback";
+      case "alert": return "Important Alert";
+      default: return "Message from Management";
+    }
+  };
+
   // Handle form submission
   const handleSubmit = () => {
     if (!messageContent.trim()) return;
     
-    onSendMessage(messageContent);
+    const subject = getSubject(selectedTemplate);
+
+    onSendMessage(employee.email, subject, messageContent);
     setMessageSent(true);
     
     // Reset after 3 seconds
@@ -146,7 +166,7 @@ export function MessageEmployeeDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Send Message to Employee</DialogTitle>
           <DialogDescription>
@@ -158,13 +178,13 @@ export function MessageEmployeeDialog({
           <div className="flex items-start gap-4">
             <Avatar className="h-10 w-10">
               <AvatarFallback>
-                {employee.firstName[0]}{employee.lastName[0]}
+                {employee.first_name[0]}{employee.last_name[0]}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-medium">{employee.firstName} {employee.lastName}</h3>
+              <h3 className="font-medium">{employee.first_name} {employee.last_name}</h3>
               <div className="text-sm text-gray-500">
-                {employee.role} | {employee.branch}
+                {employee.role} | {branches.find((b: any) => b.id === employee.branch_id)?.name || "N/A"}
               </div>
             </div>
           </div>

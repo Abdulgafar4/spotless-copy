@@ -2,11 +2,6 @@ import {
     BarChart, Calendar, PieChart, TrendingUp, FileText,
     Users,
     Building,
-    BarChart3,
-    Mail,
-    Star,
-    Settings,
-    NotebookText,
   } from "lucide-react"
 
 export const branchPerformanceData = [
@@ -132,67 +127,6 @@ export const metrics = [
       subtitle: "this month",
     },
   ]
-
-export const getAdminNavigation = (pathname?: string) => [
-    {
-      name: "Overview",
-      href: "/admin",
-      icon: BarChart3,
-      current: pathname === "/admin",
-    },
-    {
-      name: "Branches",
-      href: "/admin/branches",
-      icon: Building,
-      current:
-        pathname === "/admin/branches" ||
-        pathname?.startsWith("/admin/branches/"),
-    },
-    {
-      name: "Scheduling",
-      href: "/admin/scheduling",
-      icon: Calendar,
-      current: pathname === "/admin/scheduling",
-    },
-    {
-      name: "Bookings",
-      href: "/admin/bookings",
-      icon: NotebookText,
-      current: pathname === "/admin/bookings",
-    },
-    {
-      name: "Customers",
-      href: "/admin/customers",
-      icon: Users,
-      current: pathname === "/admin/customers",
-    },
-    {
-      name: "Inquiries",
-      href: "/admin/inquiries",
-      icon: Mail,
-      current: pathname === "/admin/inquiries",
-    },
-    {
-      name: "Staffs",
-      href: "/admin/employees",
-      icon: FileText,
-      current: pathname === "/admin/employees",
-    },
-    {
-      name: "Feedback",
-      href: "/admin/feedback",
-      icon: Star,
-      current: pathname === "/admin/feedback",
-    },
-    {
-      name: "Settings",
-      href: "/admin/settings",
-      icon: Settings,
-      current: pathname === "/admin/settings",
-    }
-  ];
-
-  // Mock inquiries data
 export const mockInquiries = [
   {
     id: 1,
@@ -320,7 +254,6 @@ export const mockInquiries = [
     ]
   },
 ]
-
 export const mockAppointments: Appointment[] = [
   {
     id: 1,
@@ -414,7 +347,6 @@ export const mockAppointments: Appointment[] = [
     phone: "613-555-9876"
   },
 ]
-
 export const mockBookings = [
   {
     id: "BOK-10245",
@@ -538,8 +470,6 @@ export const mockBookings = [
   },
 ];
 
-
-// Mock employees data
 export const mockEmployees = [
   {
     id: 1,

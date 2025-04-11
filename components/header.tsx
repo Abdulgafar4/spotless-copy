@@ -11,10 +11,10 @@ import {
 import { User, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
-import { getAdminNavigation } from "./admin/adminDummyData";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { clientNavigation } from "./dashboard/clientDummyData";
+import { getAdminNavigation } from "@/constants/admin-navigation";
 
 export default function Header() {
   const { logout, user, isAdmin } = useAuth();

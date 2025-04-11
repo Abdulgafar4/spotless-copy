@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import {
   Search,
@@ -16,7 +16,10 @@ import {
   X,
   Clock,
   Eye,
-  MessageCircle
+  MessageCircle,
+  Loader2,
+  AlertTriangle,
+  Shield
 } from "lucide-react"
 import {
   Card,
@@ -45,30 +48,48 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import AdminLayout from "@/components/admin/admin-layout"
 import { InquiryDetailsDialog } from "@/components/admin/inquiries/inquiryDetails"
-import {mockInquiries} from '../adminDummyData'
+import { useAdminInquiries } from "@/hooks/use-inquiries"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ConfirmActionDialog } from "./confirm-action"
 
 export default function InquiriesPage() {
-  const [inquiries, setInquiries] = useState(mockInquiries)
   const [searchTerm, setSearchTerm] = useState("")
   const [currentTab, setCurrentTab] = useState("all")
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{ 
+    action: string; 
+    inquiryId: string;
+    title: string; 
+    description: string 
+  }>({ 
+    action: "", 
+    inquiryId: "",
+    title: "", 
+    description: "" 
+  })
+  
+  const itemsPerPage = 10
+
+  // Use our custom hook to fetch and manage inquiries
+  const { 
+    inquiries, 
+    loading, 
+    error, 
+    fetchInquiries, 
+    updateInquiry,
+    isAuthorized 
+  } = useAdminInquiries()
 
   // Filter inquiries based on search term and current tab
   const filteredInquiries = inquiries.filter(inquiry => {
     const matchesSearch = 
-      inquiry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inquiry.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inquiry.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inquiry.subject.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -85,6 +106,87 @@ export default function InquiriesPage() {
   const handleViewInquiry = (inquiry: any) => {
     setSelectedInquiry(inquiry)
     setIsDetailsDialogOpen(true)
+  }
+  
+  // Handle bulk actions
+  const handleMarkAsResolved = () => {
+    const selectedIds = filteredInquiries
+      .filter(inquiry => inquiry.status !== "resolved")
+      .map(inquiry => inquiry.id);
+    
+    if (selectedIds.length === 0) return;
+    
+    setConfirmAction({
+      action: "resolve-bulk",
+      inquiryId: "",
+      title: "Mark Inquiries as Resolved",
+      description: `Are you sure you want to mark ${selectedIds.length} inquiries as resolved?`
+    });
+    setIsConfirmDialogOpen(true);
+  }
+  
+  // Handle single inquiry actions from dropdown
+  const handleInquiryAction = (action: string, inquiry: any) => {
+    let title = "";
+    let description = "";
+    
+    switch (action) {
+      case "resolve":
+        title = "Mark as Resolved";
+        description = `Are you sure you want to mark this inquiry from ${inquiry.name} as resolved?`;
+        break;
+      case "urgent":
+        title = "Flag as Urgent";
+        description = `Are you sure you want to flag this inquiry from ${inquiry.name} as urgent?`;
+        break;
+      case "archive":
+        title = "Archive Inquiry";
+        description = `Are you sure you want to archive this inquiry from ${inquiry.name}? This will remove it from the active list.`;
+        break;
+    }
+    
+    setConfirmAction({
+      action,
+      inquiryId: inquiry.id,
+      title,
+      description
+    });
+    setIsConfirmDialogOpen(true);
+  }
+  
+  // Handle confirmation actions
+  const handleConfirmAction = async () => {
+    try {
+      if (confirmAction.action === "resolve-bulk") {
+        // Handle bulk resolve
+        const updates = filteredInquiries
+          .filter(inquiry => inquiry.status !== "resolved")
+          .map(inquiry => updateInquiry(inquiry.id, { status: "resolved" }));
+        
+        await Promise.all(updates);
+      } else if (confirmAction.inquiryId) {
+        // Handle single inquiry action
+        const newStatus = confirmAction.action === "resolve" 
+          ? "resolved" 
+          : confirmAction.action === "urgent" 
+            ? "urgent" 
+            : confirmAction.action === "archive" 
+              ? "archived" 
+              : "";
+        
+        if (newStatus) {
+          await updateInquiry(confirmAction.inquiryId, { status: newStatus });
+        }
+      }
+      
+      // Refresh data
+      fetchInquiries();
+      
+    } catch (err) {
+      console.error("Error performing action:", err);
+    } finally {
+      setIsConfirmDialogOpen(false);
+    }
   }
 
   // Calculate counts for each status
@@ -104,9 +206,24 @@ export default function InquiriesPage() {
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Resolved</Badge>
       case 'urgent':
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Urgent</Badge>
+      case 'archived':
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Archived</Badge>
       default:
         return <Badge>{status}</Badge>
     }
+  }
+
+  if (!isAuthorized) {
+    return (
+      <AdminLayout>
+        <Alert className="mb-6">
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            You do not have permission to access the customer inquiries page.
+          </AlertDescription>
+        </Alert>
+      </AdminLayout>
+    );
   }
 
   return (
@@ -115,7 +232,7 @@ export default function InquiriesPage() {
         <div className="flex flex-col gap-8 md:flex-row justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Customer Inquiries</h1>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleMarkAsResolved}>
               <Check className="mr-2 h-4 w-4" />
               Mark as Resolved
             </Button>
@@ -202,146 +319,150 @@ export default function InquiriesPage() {
                     <DropdownMenuItem onClick={() => setCurrentTab("in-progress")}>In Progress</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setCurrentTab("urgent")}>Urgent</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setCurrentTab("resolved")}>Resolved</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setCurrentTab("archived")}>Archived</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="all" className="mb-6" onValueChange={setCurrentTab}>
-              <TabsList>
-                <TabsTrigger value="all">
-                  All
-                  <Badge className="ml-2 bg-gray-100 text-gray-900">{inquiries.length}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="new">
-                  New
-                  <Badge className="ml-2 bg-blue-100 text-blue-900">{countByStatus.new || 0}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="in-progress">
-                  In Progress
-                  <Badge className="ml-2 bg-yellow-100 text-yellow-900">{countByStatus['in-progress'] || 0}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="urgent">
-                  Urgent
-                  <Badge className="ml-2 bg-red-100 text-red-900">{countByStatus.urgent || 0}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="resolved">
-                  Resolved
-                  <Badge className="ml-2 bg-green-100 text-green-900">{countByStatus.resolved || 0}</Badge>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedInquiries.length > 0 ? (
-                  paginatedInquiries.map((inquiry) => (
-                    <TableRow key={inquiry.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>
-                              {inquiry.name.split(' ').map(name => name[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{inquiry.name}</div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                              <Mail className="h-3 w-3" /> {inquiry.email}
-                            </div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                              <Phone className="h-3 w-3" /> {inquiry.phone}
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-lg">Loading inquiries...</span>
+              </div>
+            ) : error ? (
+              <Alert variant="destructive" className="my-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load inquiries. Please try refreshing the page.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Assigned To</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedInquiries.length > 0 ? (
+                    paginatedInquiries.map((inquiry) => (
+                      <TableRow key={inquiry.id} className="whitespace-nowrap">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>
+                                {inquiry.full_name.split(' ').map(name => name[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{inquiry.full_name}</div>
+                              <div className="text-xs text-gray-500 flex items-center gap-1">
+                                <Mail className="h-3 w-3" /> {inquiry.email}
+                              </div>
+                              {inquiry.phone && (
+                                <div className="text-xs text-gray-500 flex items-center gap-1">
+                                  <Phone className="h-3 w-3" /> {inquiry.phone}
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{inquiry.subject}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-[250px]">
-                          {inquiry.message.length > 60 
-                            ? `${inquiry.message.substring(0, 60)}...` 
-                            : inquiry.message}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {inquiry.responses.length > 0 ? (
-                            <span className="flex items-center gap-1">
-                              <MessageCircle className="h-3 w-3" />
-                              {inquiry.responses.length} response{inquiry.responses.length > 1 ? 's' : ''}
-                            </span>
-                          ) : null}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {format(new Date(inquiry.date), "MMM d, yyyy")}
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {format(new Date(inquiry.date), "h:mm a")}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(inquiry.status)}</TableCell>
-                      <TableCell>
-                        {inquiry.assignedTo ? (
-                          <div className="text-sm">{inquiry.assignedTo}</div>
-                        ) : (
-                          <div className="text-sm text-gray-500">Unassigned</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewInquiry(inquiry)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>Assign to Staff</DropdownMenuItem>
-                              <DropdownMenuItem>Mark as Resolved</DropdownMenuItem>
-                              <DropdownMenuItem>Flag as Urgent</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">Archive</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{inquiry.subject}</div>
+                          <div className="text-sm text-gray-500 truncate max-w-[250px]">
+                            {inquiry.message.length > 60 
+                              ? `${inquiry.message.substring(0, 60)}...` 
+                              : inquiry.message}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {inquiry.responses && inquiry.responses.length > 0 ? (
+                              <span className="flex items-center gap-1">
+                                <MessageCircle className="h-3 w-3" />
+                                {inquiry.responses.length} response{inquiry.responses.length > 1 ? 's' : ''}
+                              </span>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {format(new Date(inquiry.date), "MMM d, yyyy")}
+                          </div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> {format(new Date(inquiry.date), "h:mm a")}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(inquiry.status)}</TableCell>
+                        <TableCell>
+                          {inquiry.assignedTo ? (
+                            <div className="text-sm">{inquiry.assignedTo}</div>
+                          ) : (
+                            <div className="text-sm text-gray-500">Unassigned</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewInquiry(inquiry)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewInquiry(inquiry)}>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>Assign to Staff</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleInquiryAction("resolve", inquiry)}>
+                                  Mark as Resolved
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleInquiryAction("urgent", inquiry)}>
+                                  Flag as Urgent
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleInquiryAction("archive", inquiry)}
+                                  className="text-red-600"
+                                >
+                                  Archive
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center text-gray-500">
+                          <Mail className="h-10 w-10 mb-2" />
+                          <h3 className="text-lg font-medium">No inquiries found</h3>
+                          <p className="text-sm">
+                            {searchTerm || currentTab !== "all"
+                              ? "Try adjusting your search terms or filters" 
+                              : "All customer inquiries will appear here"}
+                          </p>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <div className="flex flex-col items-center justify-center text-gray-500">
-                        <Mail className="h-10 w-10 mb-2" />
-                        <h3 className="text-lg font-medium">No inquiries found</h3>
-                        <p className="text-sm">
-                          {searchTerm 
-                            ? "Try adjusting your search terms" 
-                            : "All customer inquiries will appear here"}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
           {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
@@ -379,6 +500,16 @@ export default function InquiriesPage() {
         isOpen={isDetailsDialogOpen}
         setIsOpen={setIsDetailsDialogOpen}
         inquiry={selectedInquiry}
+        onInquiryUpdated={() => fetchInquiries()}
+      />
+
+      <ConfirmActionDialog
+        isOpen={isConfirmDialogOpen}
+        setIsOpen={setIsConfirmDialogOpen}
+        title={confirmAction.title}
+        description={confirmAction.description}
+        onConfirm={handleConfirmAction}
       />
     </AdminLayout>
-  )}
+  )
+}

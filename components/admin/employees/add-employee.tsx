@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -32,12 +32,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Loader2 } from "lucide-react"
+import { useAdminBranches } from "@/hooks/use-branch"
+import { useAdminServices } from "@/hooks/use-service"
+import { EmployeeFormValues, employeeSchema } from "@/model/employee-schema"
 
 interface AddEmployeeDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   onAdd: (employee: any) => void
-  branches: string[]
 }
 
 // Define available roles
@@ -49,44 +52,24 @@ const availableRoles = [
   "Administrator"
 ];
 
-// Define available skills
-const availableSkills = [
-  "Deep Cleaning",
-  "Move-Out Cleaning",
-  "Move-In Cleaning",
-  "Carpet Cleaning",
-  "Window Cleaning",
-  "Appliance Cleaning",
-  "Post-Construction Cleaning",
-  "Team Management",
-  "Quality Control",
-  "Staff Training",
-  "Customer Relations"
-];
-
-// Define schema for the form
-const employeeSchema = z.object({
-  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
-  lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  phone: z.string().min(10, { message: "Please enter a valid phone number" }),
-  role: z.string().min(1, { message: "Please select a role" }),
-  branch: z.string().min(1, { message: "Please select a branch" }),
-  address: z.string().min(5, { message: "Address must be at least 5 characters" }),
-  postalCode: z.string().min(5, { message: "Please enter a valid postal code" }),
-  availability: z.array(z.string()).optional(),
-  skills: z.array(z.string()).optional(),
-  notes: z.string().optional(),
-});
-
-type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
 export function AddEmployeeDialog({
   isOpen,
   setIsOpen,
   onAdd,
-  branches
 }: AddEmployeeDialogProps) {
+  // Use hooks to fetch branches and services
+  const { fetchBranches, branches, loading: branchesLoading } = useAdminBranches();
+  const { services, loading: servicesLoading } = useAdminServices();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Fetch branches when component mounts or dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchBranches();
+    }
+  }, [fetchBranches, isOpen]);
+
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
@@ -105,10 +88,22 @@ export function AddEmployeeDialog({
   });
 
   // Form submission handler
-  const onSubmit = (data: EmployeeFormValues) => {
-    onAdd(data);
-    form.reset();
+  const onSubmit = async (data: EmployeeFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await onAdd(data);
+      form.reset();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      form.reset();
+    }
+  }, [isOpen, form]);
 
   // Days of the week for availability selection
   const daysOfWeek = [
@@ -202,7 +197,7 @@ export function AddEmployeeDialog({
                     <FormLabel>Role</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -230,19 +225,31 @@ export function AddEmployeeDialog({
                     <FormLabel>Branch</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value}
+                      disabled={branchesLoading}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select branch" />
+                          {branchesLoading ? (
+                            <div className="flex items-center">
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <span>Loading branches...</span>
+                            </div>
+                          ) : (
+                            <SelectValue placeholder="Select branch" />
+                          )}
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {branches.map((branch) => (
-                          <SelectItem key={branch} value={branch}>
-                            {branch}
-                          </SelectItem>
-                        ))}
+                        {branches && branches.length > 0 ? (
+                          branches.map((branch) => (
+                            <SelectItem key={branch.id} value={branch.name}>
+                              {branch.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="loading" disabled>No branches available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -340,41 +347,54 @@ export function AddEmployeeDialog({
                       Select the employee's skills and specializations
                     </FormDescription>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {availableSkills.map((skill) => (
-                      <FormField
-                        key={skill}
-                        control={form.control}
-                        name="skills"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={skill}
-                              className="flex items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(skill)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value || [], skill])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== skill
-                                          )
-                                        )
-                                  }}
-                                />
-                              </FormControl>
-                              <div className="leading-none mt-0.5">
-                                <div className="text-sm font-medium">{skill}</div>
-                              </div>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
-                  </div>
+                  {servicesLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span>Loading skills...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {services && services.length > 0 ? (
+                        services.map((service) => (
+                          <FormField
+                            key={service.id}
+                            control={form.control}
+                            name="skills"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={service.id}
+                                  className="flex items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(service.name)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...field.value || [], service.name])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== service.name
+                                              )
+                                            )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <div className="leading-none mt-0.5">
+                                    <div className="text-sm font-medium">{service.name.toLocaleUpperCase()}</div>
+                                  </div>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-2 text-center py-2 text-gray-500">
+                          No skills available
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </FormItem>
               )}
             />
@@ -401,10 +421,19 @@ export function AddEmployeeDialog({
             />
             
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit">Add Employee</Button>
+              <Button type="submit" disabled={isSubmitting || branchesLoading || servicesLoading}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Employee"
+                )}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

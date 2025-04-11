@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { getAdminNavigation } from "./adminDummyData";
+import { getAdminNavigation } from "@/constants/admin-navigation";
 
 
 const SidebarCard = ({ pathname }: any) => {
@@ -28,21 +28,24 @@ const SidebarCard = ({ pathname }: any) => {
           </div>
         </div>
         <nav className="my-5">
-          {getAdminNavigation(pathname).map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md",
-                pathname === item.href
-                  ? "text-green-500"
-                  : "text-gray-700 hover:text-green-500"
-              )}
-            >
-              <item.icon className={"h-5 w-5 text-green-500"} />
-              {item.name}
-            </Link>
-          ))}
+          {getAdminNavigation(pathname).map((item) => {
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "group flex items-center gap-3 px-3 py-2 text-md font-medium rounded-md",
+                  pathname === item.href
+                    ? "text-green-500"
+                    : "text-gray-700 hover:text-green-500"
+                )}
+              >
+                <item.icon className={"h-5 w-5 text-green-500"} />
+                {item.name}
+              </Link>
+            );
+          })}
         </nav>
       </CardContent>
     </Card>

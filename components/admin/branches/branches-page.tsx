@@ -325,7 +325,7 @@ export default function BranchesPage() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col space-y-6 mt-10">
+      <div className="flex flex-col space-y-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Branches Management

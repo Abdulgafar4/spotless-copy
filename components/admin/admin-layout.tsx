@@ -34,6 +34,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: "Settings", href: "/admin/settings", icon: Settings },
     { name: "Bookings", href: "/admin/bookings", icon: NotebookText },
     { name: "Employees", href: "/admin/employees", icon: NotebookText },
+    { name: "Services", href: "/admin/services", icon: NotebookText },
   ];
 
   const currentPage = navigation.find((nav) => pathname === nav.href);
@@ -52,10 +53,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <PageHeader title={title} breadcrumbs={breadcrumbs} />
         <main className="flex flex-col lg:flex-row gap-4">
           <div className="w-full lg:w-1/5 mt-5"> {/* Adjusted to 1/5 for sidebar */}
-            <SidebarCard />
+            <SidebarCard pathname={pathname } />
           </div>
   
-          <div className="w-full lg:w-4/5"> {/* Adjusted to 4/5 for main content */}
+          <div className="w-full lg:w-4/5 mt-12"> {/* Adjusted to 4/5 for main content */}
             {children}
           </div>
         </main>

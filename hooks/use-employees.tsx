@@ -90,29 +90,34 @@ export const useAdminEmployees = (): UseAdminEmployeesReturn => {
 
       try {
         setLoading(true);
-        // First create auth user if email is provided
         let authUserId: string | null = null;
 
+        // Try to create auth user if email is provided
         if (employeeData.email) {
-          // Generate a temporary password
-          const tempPassword = Math.random().toString(36).slice(-8);
+          try {
+            // Generate a temporary password
+            const tempPassword = Math.random().toString(36).slice(-8);
 
-          const { data: authData, error: authError } =
-            await supabase.auth.admin.createUser({
-              email: employeeData.email,
-              password: tempPassword,
-              email_confirm: true,
-              user_metadata: {
-                role: employeeData.role || "employee",
-                full_name: `${employeeData.first_name} ${employeeData.last_name}`,
-              },
-            });
+            const { data: authData, error: authError } =
+              await supabase.auth.admin.createUser({
+                email: employeeData.email,
+                password: tempPassword,
+                email_confirm: true,
+                user_metadata: {
+                  role: employeeData.role || "employee",
+                  full_name: `${employeeData.first_name} ${employeeData.last_name}`,
+                },
+              });
 
-          if (authError) {
-            throw authError;
+            if (!authError) {
+              authUserId = authData.user.id;
+            } else {
+              console.warn("Failed to create auth user, continuing with employee creation:", authError);
+            }
+          } catch (authErr) {
+            console.warn("Auth user creation failed, continuing with employee creation:", authErr);
+            // Continue with employee creation even if auth creation fails
           }
-
-          authUserId = authData.user.id;
         }
 
         // Create employee record in the database
@@ -168,19 +173,23 @@ export const useAdminEmployees = (): UseAdminEmployeesReturn => {
           throw fetchError;
         }
 
-        // If we have auth_id and email is being updated, update auth user email
+        // Try to update auth user email if it's changed
         if (
           existingEmployee.auth_id &&
           employeeData.email &&
           existingEmployee.email !== employeeData.email
         ) {
-          const { error: authUpdateError } =
-            await supabase.auth.admin.updateUserById(existingEmployee.auth_id, {
-              email: employeeData.email,
-            });
+          try {
+            const { error: authUpdateError } =
+              await supabase.auth.admin.updateUserById(existingEmployee.auth_id, {
+                email: employeeData.email,
+              });
 
-          if (authUpdateError) {
-            throw authUpdateError;
+            if (authUpdateError) {
+              console.warn("Failed to update auth user email, continuing with employee update:", authUpdateError);
+            }
+          } catch (authErr) {
+            console.warn("Auth user update failed, continuing with employee update:", authErr);
           }
         }
 
@@ -236,13 +245,17 @@ export const useAdminEmployees = (): UseAdminEmployeesReturn => {
           throw fetchError;
         }
 
-        // Delete the associated auth user if exists
+        // Try to delete the associated auth user if exists
         if (employee.auth_id) {
-          const { error: authDeleteError } =
-            await supabase.auth.admin.deleteUser(employee.auth_id);
+          try {
+            const { error: authDeleteError } =
+              await supabase.auth.admin.deleteUser(employee.auth_id);
 
-          if (authDeleteError) {
-            throw authDeleteError;
+            if (authDeleteError) {
+              console.warn("Failed to delete auth user, continuing with employee deletion:", authDeleteError);
+            }
+          } catch (authErr) {
+            console.warn("Auth user deletion failed, continuing with employee deletion:", authErr);
           }
         }
 

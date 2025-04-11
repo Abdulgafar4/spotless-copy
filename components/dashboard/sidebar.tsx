@@ -63,7 +63,7 @@ const ClientSidebar = ({ pathname }: { pathname: string }) => {
                   <Link
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md",
+                      "flex items-center gap-3 px-3 py-2 text-md font-medium rounded-md",
                       isActive(item.href) || item.subItems.some(sub => isActive(sub.href)) 
                         ? "text-green-500" 
                         : "text-gray-700 hover:text-green-500"
@@ -79,7 +79,7 @@ const ClientSidebar = ({ pathname }: { pathname: string }) => {
                         key={subItem.name}
                         href={subItem.href}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md",
+                          "flex items-center gap-3 px-3 py-2 text-md font-medium rounded-md",
                           isActive(subItem.href) 
                             ? "text-green-500" 
                             : "text-gray-700 hover:text-green-500"
@@ -95,7 +95,7 @@ const ClientSidebar = ({ pathname }: { pathname: string }) => {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md",
+                    "flex items-center gap-3 px-3 py-2 text-md font-medium rounded-md",
                     isActive(item.href) 
                       ? "text-green-500" 
                       : "text-gray-700 hover:text-green-500"

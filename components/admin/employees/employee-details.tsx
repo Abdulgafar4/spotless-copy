@@ -11,28 +11,23 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
 import {
-  User,
   Mail,
   Phone,
   MapPin,
   Building,
   Calendar,
   Award,
-  ClipboardCheck,
-  Star,
   Clock,
-  CalendarCheck,
-  CalendarX,
   MessageSquare,
   CheckCircle,
   XCircle,
   AlertCircle,
   Briefcase
 } from "lucide-react"
+import { useAdminBranches } from "@/hooks/use-branch"
+import { useEffect } from "react"
 
 interface EmployeeDetailsDialogProps {
   isOpen: boolean
@@ -53,14 +48,14 @@ export function EmployeeDetailsDialog({
 }: EmployeeDetailsDialogProps) {
   if (!employee) return null
 
-  // Helper to format date
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "MMMM d, yyyy")
-  }
+  const { fetchBranches, branches } = useAdminBranches()
 
+  useEffect(() => {
+    fetchBranches()
+  }, [fetchBranches])
   // Helper for status badge
   const getStatusBadge = (status: string) => {
-    switch(status) {
+    switch (status) {
       case "active":
         return <Badge className="bg-green-100 text-green-800">Active</Badge>
       case "inactive":
@@ -74,50 +69,48 @@ export function EmployeeDetailsDialog({
     }
   }
 
+  console.log(employee)
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto p-10">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Employee Profile</span>
             {getStatusBadge(employee.status)}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="flex items-start gap-4 my-4">
           <Avatar className="h-16 w-16">
             <AvatarFallback>
-              {employee.firstName[0]}{employee.lastName[0]}
+              {employee.first_name[0]}{employee.last_name[0]}
             </AvatarFallback>
           </Avatar>
           <div>
             <h2 className="text-xl font-bold">
-              {employee.firstName} {employee.lastName}
+              {employee.first_name} {employee.last_name}
             </h2>
             <div className="flex flex-col space-y-1 mt-1">
               <div className="flex items-center gap-1 text-sm text-gray-600">
-                <Award className="h-4 w-4" /> 
+                <Award className="h-4 w-4" />
                 <span>{employee.role}</span>
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
-                <Building className="h-4 w-4" /> 
-                <span>{employee.branch}</span>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-gray-600">
-                <Calendar className="h-4 w-4" /> 
-                <span>Hired: {formatDate(employee.hireDate)}</span>
+                <Building className="h-4 w-4" />
+                <span>{branches.find((b: any) => b.id === employee.branch_id)?.name || "N/A"}</span>
               </div>
             </div>
           </div>
         </div>
-        
+
         <Tabs defaultValue="info" className="mt-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="info">Contact Info</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="schedule">Schedule & Skills</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="info" className="mt-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 p-4 border rounded-md">
@@ -129,7 +122,7 @@ export function EmployeeDetailsDialog({
                   </a>
                 </p>
               </div>
-              
+
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
                 <p className="text-base flex items-center gap-2">
@@ -140,18 +133,18 @@ export function EmployeeDetailsDialog({
                 </p>
               </div>
             </div>
-            
+
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Address</h3>
               <p className="text-base flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-gray-400 mt-1" />
                 <span>
                   {employee.address}<br />
-                  Postal Code: {employee.postalCode}
+                  Postal Code: {employee.postal_code}
                 </span>
               </p>
             </div>
-            
+
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Notes</h3>
               <div className="mt-2 p-3 bg-gray-50 rounded-md min-h-[80px]">
@@ -162,18 +155,18 @@ export function EmployeeDetailsDialog({
                 )}
               </div>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => onMessageEmployee(employee)}
               >
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Send Message
               </Button>
-              
+
               {employee.status !== "active" && (
-                <Button 
+                <Button
                   className="bg-green-500 hover:bg-green-600"
                   onClick={() => onUpdateStatus(employee, "active")}
                 >
@@ -181,9 +174,9 @@ export function EmployeeDetailsDialog({
                   Activate Employee
                 </Button>
               )}
-              
+
               {employee.status === "active" && (
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => onUpdateStatus(employee, "inactive")}
                 >
@@ -191,9 +184,9 @@ export function EmployeeDetailsDialog({
                   Set as Inactive
                 </Button>
               )}
-              
+
               {employee.status !== "terminated" && (
-                <Button 
+                <Button
                   variant="destructive"
                   onClick={() => onUpdateStatus(employee, "terminated")}
                 >
@@ -203,33 +196,9 @@ export function EmployeeDetailsDialog({
               )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="performance" className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 p-4 border rounded-md">
-                <h3 className="text-sm font-medium text-gray-500">Completed Jobs</h3>
-                <p className="text-base flex items-center gap-2">
-                  <ClipboardCheck className="h-4 w-4 text-gray-400" />
-                  {employee.completedJobs} job{employee.completedJobs !== 1 ? 's' : ''}
-                </p>
-              </div>
-              
-              <div className="space-y-2 p-4 border rounded-md">
-                <h3 className="text-sm font-medium text-gray-500">Customer Rating</h3>
-                <div className="flex items-center gap-2">
-                  <Star className="h-4 w-4 text-yellow-400" />
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      {employee.rating ? employee.rating.toFixed(1) : 'N/A'}
-                    </span>
-                    {employee.rating ? (
-                      <Progress value={employee.rating * 20} className="h-2 w-24" />
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
+
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Job History</h3>
               <div className="mt-2 py-6 px-4 bg-gray-50 rounded-md text-center">
@@ -237,14 +206,14 @@ export function EmployeeDetailsDialog({
                 <p className="text-gray-500">Detailed job history would be displayed here</p>
               </div>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
               <Button variant="outline">
                 <Calendar className="mr-2 h-4 w-4" />
                 View Full Job History
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={() => onAssignRole(employee)}
               >
@@ -253,26 +222,25 @@ export function EmployeeDetailsDialog({
               </Button>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="schedule" className="mt-6 space-y-4">
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Availability</h3>
               <div className="grid grid-cols-7 gap-2 mt-4">
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                  <div 
-                    key={day} 
-                    className={`text-center p-2 rounded-md ${
-                      employee.availability && employee.availability.includes(day)
+                  <div
+                    key={day}
+                    className={`text-center p-2 rounded-md ${employee.availability && employee.availability.includes(day)
                         ? 'bg-green-100 text-green-800 border border-green-200'
                         : 'bg-gray-100 text-gray-400 border border-gray-200'
-                    }`}
+                      }`}
                   >
                     <div className="text-xs">{day.substring(0, 3)}</div>
                   </div>
                 ))}
               </div>
             </div>
-            
+
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Skills & Specialties</h3>
               {employee.skills && employee.skills.length > 0 ? (
@@ -287,7 +255,7 @@ export function EmployeeDetailsDialog({
                 <p className="text-gray-500 mt-2 italic">No specialized skills listed</p>
               )}
             </div>
-            
+
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Upcoming Schedule</h3>
               <div className="mt-2 py-6 px-4 bg-gray-50 rounded-md text-center">
@@ -297,7 +265,7 @@ export function EmployeeDetailsDialog({
             </div>
           </TabsContent>
         </Tabs>
-        
+
         <DialogFooter className="mt-6">
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Close

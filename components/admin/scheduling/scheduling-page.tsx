@@ -355,7 +355,7 @@ export default function SchedulingPage() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col space-y-6 mt-10 px-4 sm:px-6">
+      <div className="flex flex-col space-y-6 px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Service Scheduling</h1>
           <Button onClick={openAddDialog}>
