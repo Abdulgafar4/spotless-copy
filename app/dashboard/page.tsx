@@ -124,9 +124,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-bold mb-4">QUICK BOOKING</h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
+          <h2 className="text-xl font-bold mb-10 mt-2">QUICK BOOKING</h2>
               <FormSelectWithIcon
                 icon={<CalendarClock className="h-5 w-5" />}
                 placeholder="Select Service"

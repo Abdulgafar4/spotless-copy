@@ -85,7 +85,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen mt-10">
+    <div className="flex flex-col min-h-screen mt-20">
       <PageHeader
         title="SIGN UP"
         breadcrumbs={[

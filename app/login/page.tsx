@@ -45,7 +45,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col mt-10">
+    <div className="flex flex-col mt-20">
       <PageHeader
         title="LOGIN"
         breadcrumbs={[

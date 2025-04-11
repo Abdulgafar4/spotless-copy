@@ -12,7 +12,7 @@ interface FormSelectWithIconProps {
 export function FormSelectWithIcon({ icon, placeholder, options, onChange, error }: FormSelectWithIconProps) {
   return (
     <div className="relative">
-      <div className="absolute left-3 top-3 h-5 w-5 text-gray-400">
+      <div className="absolute left-3 top-3 h-10 w-5 text-gray-400">
         {icon}
       </div>
       <Select onValueChange={onChange}>

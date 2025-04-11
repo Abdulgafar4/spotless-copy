@@ -1,51 +1,74 @@
 "use client"
 
 import * as React from "react";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from 'primereact/calendar';
+// Import PrimeReact styles
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
 
 interface CalendarComponentProps {
   onSelectDate: (date: string) => void;
 }
 
 export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [date, setDate] = React.useState<Date | null | undefined>(new Date());
 
-  const handleDateSelect = (selectedDate: Date | undefined) => {
+  const handleDateSelect = (e: { value: Date | null | undefined }) => {
+    const selectedDate = e.value;
     setDate(selectedDate);
     if (selectedDate) {
-      onSelectDate(selectedDate.toISOString().split('T')[0]);
+      // Format date as YYYY-MM-DD string for the booking system
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      onSelectDate(formattedDate);
     }
   };
+
+  React.useEffect(() => {
+    // Apply custom styles after component mounts
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .p-highlight {
+        background-color: #10b981 !important; /* green-500 */
+        color: white !important;
+      }
+      .p-datepicker-today > span {
+        border-color: #10b981 !important;
+      }
+      .p-datepicker .p-datepicker-header {
+        background-color: white;
+        color: black;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .p-datepicker {
+        border: none;
+        box-shadow: none;
+      }
+      .p-datepicker table td {
+        padding: 0.3rem;
+      }
+      .p-datepicker table td > span {
+        width: 2rem;
+        height: 2rem;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col">
       <div className="w-full h-full flex items-center justify-center rounded-md border shadow bg-white p-2">
         <Calendar
-          mode="single"
-          selected={date}
-          onSelect={handleDateSelect}
+          value={date}
+          onChange={handleDateSelect}
+          inline
+          showButtonBar
+          dateFormat="yy-mm-dd"
           className="w-full h-full"
-          required={false}
-          classNames={{
-            month: "w-full space-y-4",
-            caption: "flex justify-center pt-1 relative items-center",
-            caption_label: "text-sm font-medium",
-            nav: "space-x-1 flex items-center",
-            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-            nav_button_previous: "absolute left-1",
-            nav_button_next: "absolute right-1",
-            table: "w-full border-collapse space-y-1",
-            head_row: "flex w-full justify-between",
-            head_cell: "text-slate-500 w-10 text-center text-xs font-normal",
-            row: "flex w-full justify-between mt-2",
-            cell: "text-center p-0 relative w-10 h-10",
-            day: "h-10 w-10 p-0 flex items-center justify-center font-normal rounded-md",
-            day_selected: "!bg-green-500 !text-white hover:!bg-green-600",
-            day_today: "bg-slate-100 text-slate-900",
-            day_outside: "text-slate-500 opacity-50",
-            day_disabled: "text-slate-500 opacity-50",
-            day_hidden: "invisible",
-          }}
+          panelClassName="h-full"
         />
       </div>
     </div>

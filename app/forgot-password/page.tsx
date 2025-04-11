@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex flex-col mt-10">
+    <div className="flex flex-col mt-20">
       <PageHeader
         title="FORGOT PASSWORD"
         breadcrumbs={[
