@@ -20,9 +20,9 @@ export function FormSelectWithIcon({ icon, placeholder, options, onChange, error
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
+          {options.map((option, index) => (
+            <SelectItem key={`${option.value}-${index}`} value={option.label}>
+              <span>{option.label}</span>
             </SelectItem>
           ))}
         </SelectContent>

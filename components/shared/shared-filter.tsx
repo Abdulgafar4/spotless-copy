@@ -15,6 +15,7 @@ type FilterDropdownProps = {
   label?: string;
   onSelect: (selected: string) => void;
   defaultOption?: string;
+  currentValue?: string; // ✅ added
 };
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
@@ -22,11 +23,11 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   label = "Filter",
   onSelect,
   defaultOption = "All",
+  currentValue,
 }) => {
-  const [selectedOption, setSelectedOption] = useState<string>(defaultOption);
+  const selectedOption = currentValue ?? defaultOption;
 
   const handleSelect = (option: string) => {
-    setSelectedOption(option);
     onSelect(option);
   };
 
@@ -42,10 +43,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
         <DropdownMenuLabel>{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map((option) => (
-          <DropdownMenuItem
-            key={option}
-            onClick={() => handleSelect(option)}
-          >
+          <DropdownMenuItem key={option} onClick={() => handleSelect(option)}>
             {option}
           </DropdownMenuItem>
         ))}
@@ -54,4 +52,4 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   );
 };
 
-export default FilterDropdown;
+export default FilterDropdown

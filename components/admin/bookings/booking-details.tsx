@@ -48,15 +48,9 @@ export function BookingDetailsDialog({
 }: BookingDetailsDialogProps) {
   if (!booking) return null
 
-  // Helper to format date
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "MMMM d, yyyy")
-  }
 
-  // Helper to format time
-  const formatTime = (dateString: string) => {
-    return format(new Date(dateString), "h:mm a")
-  }
+  const formatDate = (dateString: string) => format(new Date(dateString), "MMM d, yyyy")
+const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a")
 
   // Helper for status badge
   const getStatusBadge = (status: string) => {
@@ -77,6 +71,8 @@ export function BookingDetailsDialog({
         return <Badge>{status}</Badge>
     }
   }
+
+  console.log(booking)
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -117,7 +113,7 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Date</h3>
                 <p className="text-base flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  {formatDate(booking.date)}
+                  {booking.date}
                 </p>
               </div>
               
@@ -125,7 +121,8 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Time & Duration</h3>
                 <p className="text-base flex items-center gap-2">
                   <Clock className="h-4 w-4 text-gray-400" />
-                  {formatTime(booking.date)} ({booking.duration})
+                  {booking.date} 
+                  {/* ({booking.duration}) */}
                 </p>
               </div>
               
@@ -141,7 +138,7 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Created On</h3>
                 <p className="text-base flex items-center gap-2">
                   <FileText className="h-4 w-4 text-gray-400" />
-                  {formatDate(booking.created)} at {formatTime(booking.created)}
+                  {formatDate(booking.modified)} at {formatTime(booking.modified)}
                 </p>
               </div>
             </div>

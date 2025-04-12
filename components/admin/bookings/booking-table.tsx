@@ -11,7 +11,6 @@ import { Calendar } from "lucide-react"
 
 export const BookingsTable: React.FC<BookingsTableProps> = ({ 
     paginatedBookings, 
-    filteredBookings, 
     onViewBooking, 
     onUpdateStatus, 
     onAssignStaff, 
@@ -25,8 +24,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
     <Table className="min-w-full">
         <TableHeader>
           <TableRow>
-            {[
-              "Booking ID", "Customer", "Service", "Date & Time", 
+            {[ "Customer", "Service", "Date & Time", 
               "Status", "Staff", "Amount", "Actions"
             ].map(header => (
               <TableHead key={header} className="px-6 py-4 whitespace-nowrap"> 

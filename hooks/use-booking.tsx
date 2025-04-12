@@ -25,35 +25,98 @@ export const useAdminBookings = (): UseBookingsReturn => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const { isAdmin, isClient, userId, userRole } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   // Role-based permissions
+  const isClient = user?.user_metadata?.user_role == "client"
+  const userId = user?.id
   const canViewAll = isAdmin;
   const canCreate = true; // All users can create bookings
   const canUpdate = isAdmin || isClient;
   const canDelete = isAdmin;
-  const canViewPersonal = true; // All users can view their own bookings
 
   // Fetch bookings based on user role
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
       
-      let query = supabase.from("bookings").select("*");
+      // Step 1: Fetch bookings without trying to join
+      let bookingsQuery = supabase.from("bookings").select("*");
       
       // Filter bookings based on user role
-      if (!isAdmin) {
-        // Both clients and regular users can see their own bookings
-        query = query.eq("client_id", userId);
+      if (!isAdmin && userId) {
+        bookingsQuery = bookingsQuery.eq("user_id", userId);
+      } else if (!isAdmin && !userId) {
+        setError(new Error("User ID is required to fetch your bookings"));
+        setLoading(false);
+        return;
       }
       
-      const { data, error: supabaseError } = await query.order("date", { ascending: false });
-
-      if (supabaseError) {
-        throw supabaseError;
+      const { data: bookingsData, error: bookingsError } = await bookingsQuery.order("date", { ascending: false });
+      
+      if (bookingsError) {
+        throw bookingsError;
       }
-
-      setBookings(data || []);
+      
+      // If no bookings, set empty array and return
+      if (!bookingsData || bookingsData.length === 0) {
+        setBookings([]);
+        return;
+      }
+      
+      // Step 2: Get unique user IDs from bookings
+      const userIds = [...new Set(bookingsData.map(booking => booking.user_id))];
+      
+      // Step 3: Fetch profiles for those user IDs
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", userIds);
+      
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        // Just return bookings without profiles if there's an error
+        setBookings(formatBookingsData(bookingsData));
+        return;
+      }
+      
+      // Step 4: Create a map for quick profile lookups
+      const profilesMap : any = {};
+      if (profilesData) {
+        profilesData.forEach(profile => {
+          profilesMap[profile.id] = profile;
+        });
+      }
+      
+      // Step 5: Transform bookings to the required format
+      const formattedBookings = bookingsData.map(booking => {
+        const profile = profilesMap[booking.user_id] || {};
+        
+        return {
+          id: booking.id || "",
+          customerName: profile.first_name && profile.last_name 
+            ? `${profile.first_name} ${profile.last_name}` 
+            : "Unknown Customer",
+          customerPhone: profile.phone || "",
+          customerEmail: profile.email || "",
+          service: booking.service_type || "",
+          branch: booking.branch_id || "",
+          date: booking.date || "",
+          duration: booking.duration || "",
+          status: booking.status || "pending",
+          assignedStaff: booking.assigned_staff || [],
+          amount: booking.total_amount || 0,
+          address: booking.address 
+            ? `${booking.address}, ${booking.city || ""} ${booking.postal_code || ""}` 
+            : (profile.address 
+                ? `${profile.address}, ${profile.city || ""} ${profile.postal_code || ""}` 
+                : ""),
+          modified: booking.updated_at || booking.created_at || ""
+        };
+      });
+      
+      setBookings(formattedBookings);
+      
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("An unknown error occurred")
@@ -62,8 +125,29 @@ export const useAdminBookings = (): UseBookingsReturn => {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, isClient, userId]);
-
+  }, [isAdmin, userId]);
+  
+  // Helper function to format booking data even if profiles aren't available
+  const formatBookingsData = (bookingsData: any) => {
+    return bookingsData.map((booking: any) => ({
+      id: booking.id || "",
+      customerName: "Unknown Customer",
+      customerPhone: "",
+      customerEmail: "",
+      service: booking.service_type || "",
+      branch: booking.branch_id || "",
+      date: booking.date || "",
+      duration: booking.duration || "",
+      status: booking.status || "pending",
+      assignedStaff: booking.assigned_staff || [],
+      amount: booking.total_amount || 0,
+      address: booking.address 
+        ? `${booking.address}, ${booking.city || ""} ${booking.postal_code || ""}` 
+        : "",
+      modified: booking.updated_at || booking.created_at || ""
+    }));
+  };
+  
   // Create a new booking
   const createBooking = useCallback(
     async (bookingData: Partial<Booking>): Promise<Booking> => {

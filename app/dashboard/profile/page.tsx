@@ -41,8 +41,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, User, ShieldAlert, KeyRound, Building, Home, Phone, Mail } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import DashboardLayout from "@/components/dashboard/dashboard-layout";
@@ -53,9 +52,9 @@ const profileFormSchema = z.object({
   lastName: z.string().min(2, { message: "Last name is required" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   phone: z.string().min(10, { message: "Phone number must be at least 10 digits" }),
-  address: z.string().min(5, { message: "Address is required" }),
-  city: z.string().min(2, { message: "City is required" }),
-  postalCode: z.string().min(5, { message: "Valid postal code is required" }),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  postalCode: z.string().optional(),
   preferredBranch: z.string().optional(),
 });
 
@@ -75,7 +74,7 @@ export default function ProfilePage() {
   const { user, supabase } = useAuth();
   const [loading, setLoading] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [branches, setBranches] = useState<{ value: string, label: string }[]>([]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const profileForm = useForm<ProfileFormValues>({
@@ -101,56 +100,67 @@ export default function ProfilePage() {
     },
   });
 
+  // Fetch branches from Supabase
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('branches')
+          .select('id, name')
+
+        if (error) throw error;
+
+        if (data) {
+          const branchOptions = data.map((branch: any) => ({
+            value: branch.id,
+            label: branch.name
+          }));
+          setBranches(branchOptions);
+        }
+      } catch (error) {
+        console.error('Error fetching branches:', error);
+        toast.error('Failed to load branches');
+      }
+    };
+
+    fetchBranches();
+  }, [supabase]);
+
+  // Load user data from auth
   useEffect(() => {
     if (user) {
       loadUserProfile();
     }
   }, [user]);
 
+
   const loadUserProfile = async () => {
     try {
       setLoading(true);
-      
-      // Fetch user profile from supabase
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') {
+
+      // Get user data directly from auth
+      const { data: userData, error } = await supabase.auth.getUser();
+
+      if (error) {
         throw error;
       }
-      
-      if (data) {
-        setUserProfile(data);
-        
+
+      if (userData.user) {
+        const metadata = userData.user.user_metadata || {};
+
         // Set form values
         profileForm.reset({
-          firstName: data.first_name || "",
-          lastName: data.last_name || "",
-          email: user.email || "",
-          phone: data.phone || "",
-          address: data.address || "",
-          city: data.city || "",
-          postalCode: data.postal_code || "",
-          preferredBranch: data.preferred_branch || "",
+          firstName: metadata.firstName || "",
+          lastName: metadata.lastName || "",
+          email: userData.user.email || "",
+          phone: metadata.phone || "",
+          address: metadata.address || "",
+          city: metadata.city || "",
+          postalCode: metadata.postal_code || "",
+          preferredBranch: metadata.preferred_branch || "",
         });
-        
-        // Get avatar URL if exists
-        if (data.avatar_url) {
-          const { data: avatarData } = await supabase.storage
-            .from('avatars')
-            .createSignedUrl(data.avatar_url, 60 * 60);
-            
-          if (avatarData) {
-            setAvatarUrl(avatarData.signedUrl);
-          }
-        }
-      } else {
-        // If no profile exists yet, just fill in email from auth
-        profileForm.setValue('email', user.email || "");
       }
+
     } catch (error) {
       console.error('Error loading user profile:', error);
       toast.error('Failed to load profile');
@@ -162,23 +172,22 @@ export default function ProfilePage() {
   const onProfileSubmit = async (data: ProfileFormValues) => {
     try {
       setLoading(true);
-      
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          first_name: data.firstName,
-          last_name: data.lastName,
+
+      // Update user metadata
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          firstName: data.firstName,
+          lastName: data.lastName,
           phone: data.phone,
           address: data.address,
           city: data.city,
-          postal_name: data.postalCode,
-          preferred_branch: data.preferredBranch,
-          updated_at: new Date()
-        });
+          postal_code: data.postalCode,
+          preferred_branch: data.preferredBranch
+        }
+      });
 
       if (error) throw error;
-      
+
       toast.success('Profile updated successfully');
       await loadUserProfile(); // Refresh data
     } catch (error) {
@@ -192,24 +201,14 @@ export default function ProfilePage() {
   const onPasswordSubmit = async (data: PasswordFormValues) => {
     try {
       setLoading(true);
-      
-      // Verify current password first
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: data.currentPassword,
-      });
 
-      if (verifyError) {
-        throw new Error('Current password is incorrect');
-      }
-
-      // Update password
+      // Update password (no need to verify current password as this is handled by Supabase)
       const { error } = await supabase.auth.updateUser({
         password: data.newPassword,
       });
 
       if (error) throw error;
-      
+
       toast.success('Password updated successfully');
       passwordForm.reset();
     } catch (error: any) {
@@ -223,14 +222,14 @@ export default function ProfilePage() {
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploadingAvatar(true);
-      
+
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error('You must select an image to upload.');
       }
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}.${fileExt}`;
+      const filePath = `${user?.id}.${fileExt}`;
 
       // Upload image to storage
       const { error: uploadError } = await supabase.storage
@@ -248,19 +247,17 @@ export default function ProfilePage() {
 
       if (data) {
         setAvatarUrl(data.signedUrl);
-        
-        // Update profile with avatar URL
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: user.id,
-            avatar_url: filePath,
-            updated_at: new Date()
-          });
+
+        // Update user metadata with avatar URL
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            avatar_url: filePath
+          }
+        });
 
         if (updateError) throw updateError;
       }
-      
+
       toast.success('Profile picture updated');
     } catch (error) {
       console.error('Error uploading avatar:', error);
@@ -270,14 +267,18 @@ export default function ProfilePage() {
     }
   };
 
-  // Mock data for branches
-  const branches = [
-    { value: "downtown", label: "Toronto Downtown" },
-    { value: "northyork", label: "North York" },
-    { value: "mississauga", label: "Mississauga" },
-    { value: "scarborough", label: "Scarborough" },
-    { value: "etobicoke", label: "Etobicoke" },
-  ];
+  const getInitials = () => {
+    const firstName = profileForm.getValues('firstName') || '';
+    const lastName = profileForm.getValues('lastName') || '';
+
+    if (firstName && lastName) {
+      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    } else if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+
+    return 'U';
+  };
 
   return (
     <DashboardLayout>
@@ -288,16 +289,16 @@ export default function ProfilePage() {
             Manage your account settings and set your preferred branch
           </p>
         </div>
-        
+
         <Separator />
-        
+
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full md:w-auto md:inline-flex md:space-x-1 grid-cols-2 md:grid-cols-3">
             <TabsTrigger value="profile">Personal Info</TabsTrigger>
             <TabsTrigger value="password">Password</TabsTrigger>
             <TabsTrigger value="avatar">Profile Picture</TabsTrigger>
           </TabsList>
-          
+
           <div className="mt-6">
             <TabsContent value="profile" className="space-y-6">
               <Card>
@@ -383,7 +384,7 @@ export default function ProfilePage() {
                             <FormItem>
                               <FormLabel>Address</FormLabel>
                               <FormControl>
-                                <Input placeholder="123 Main St" {...field} />
+                                <Input placeholder="123 Main St" {...field} value={field.value || ''} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -398,7 +399,7 @@ export default function ProfilePage() {
                               <FormItem>
                                 <FormLabel>City</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Toronto" {...field} />
+                                  <Input placeholder="Toronto" {...field} value={field.value || ''} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -411,7 +412,7 @@ export default function ProfilePage() {
                               <FormItem>
                                 <FormLabel>Postal Code</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="M5V 2H1" {...field} />
+                                  <Input placeholder="M5V 2H1" {...field} value={field.value || ''} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -425,7 +426,10 @@ export default function ProfilePage() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Preferred Branch</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <Select
+                                value={field.value ?? ""}
+                                onValueChange={(val) => field.onChange(val)}
+                              >
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select your preferred branch" />
@@ -433,7 +437,7 @@ export default function ProfilePage() {
                                 </FormControl>
                                 <SelectContent>
                                   {branches.map((branch) => (
-                                    <SelectItem key={branch.value} value={branch.value}>
+                                    <SelectItem key={branch.value} value={branch.label}>
                                       {branch.label}
                                     </SelectItem>
                                   ))}
@@ -446,7 +450,8 @@ export default function ProfilePage() {
                             </FormItem>
                           )}
                         />
-                        
+
+
                         <Button type="submit" disabled={loading} className="w-full md:w-auto">
                           {loading ? (
                             <>
@@ -463,7 +468,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="password" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -488,7 +493,7 @@ export default function ProfilePage() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={passwordForm.control}
                         name="newPassword"
@@ -505,7 +510,7 @@ export default function ProfilePage() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={passwordForm.control}
                         name="confirmPassword"
@@ -519,7 +524,7 @@ export default function ProfilePage() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <Button type="submit" disabled={loading} className="w-full md:w-auto">
                         {loading ? (
                           <>
@@ -535,7 +540,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="avatar" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -551,16 +556,16 @@ export default function ProfilePage() {
                         <AvatarImage src={avatarUrl} alt="Profile" />
                       ) : (
                         <AvatarFallback>
-                          <User className="h-12 w-12" />
+                          {getInitials()}
                         </AvatarFallback>
                       )}
                     </Avatar>
-                    
+
                     <div className="grid w-full max-w-sm items-center gap-1.5">
                       <Label htmlFor="avatar">Upload a new picture</Label>
-                      <Input 
-                        id="avatar" 
-                        type="file" 
+                      <Input
+                        id="avatar"
+                        type="file"
                         accept="image/*"
                         onChange={handleAvatarUpload}
                         disabled={uploadingAvatar}

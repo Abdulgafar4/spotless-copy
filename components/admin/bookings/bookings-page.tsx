@@ -60,7 +60,6 @@ export default function BookingsPage() {
     fetchBookings()
   }, [fetchBookings])
 
-
   // Filtering and Sorting Logic
   const filterBookings = (bookings: Booking[]) => {
     return bookings.filter(booking => {
@@ -211,7 +210,6 @@ export default function BookingsPage() {
   // Filtered and Paginated Bookings
   const filteredBookings = filterBookings(bookings)
   const {
-    sortedBookings,
     totalPages,
     startIndex,
     paginatedBookings

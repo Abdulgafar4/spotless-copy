@@ -1,33 +1,19 @@
+// components/dashboard/appointments/appointment-card.tsx
 import { useState } from "react";
 import { 
   Clock, Calendar, MapPin, Building, ArrowRight, 
-  CheckCircle, AlertCircle, XCircle, Info
+  CheckCircle, AlertCircle, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Appointment } from "@/hooks/use-client-appointments";
+import { AppointmentDetailsDialog } from "./appointment-details-dialog";
 
-interface Appointment {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  status: string;
-  address: string;
-  service_type: string;
-  branch: string;
-  notes?: string;
+interface AppointmentCardProps {
+  appointment: Appointment;
 }
 
-export function AppointmentCard({ appointment }: { appointment: Appointment }) {
+export function AppointmentCard({ appointment }: AppointmentCardProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   
   const statusConfig = {
@@ -75,7 +61,7 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
             </Badge>
             <span className="text-sm font-medium text-gray-500">#{appointment.id}</span>
           </div>
-          <h3 className="font-bold text-lg mb-1">{appointment.title}</h3>
+          <h3 className="font-bold text-lg mb-1">{appointment.title || appointment.service_type}</h3>
           <p className="text-gray-500">{appointment.service_type}</p>
         </div>
         
@@ -112,91 +98,11 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
         </div>
       </div>
 
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <StatusIcon className={`h-5 w-5 ${status === 'confirmed' ? 'text-green-500' : status === 'cancelled' ? 'text-red-500' : 'text-yellow-500'}`} />
-              {appointment.title}
-            </DialogTitle>
-            <DialogDescription>
-              Appointment #{appointment.id} - {config.label}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-[20px_1fr] items-start gap-x-2">
-              <Calendar className="h-5 w-5 text-gray-500" />
-              <div>
-                <span className="font-medium">Date & Time</span>
-                <p className="text-sm text-gray-500">
-                  {formatDate(appointment.date)} at {appointment.time}
-                </p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-[20px_1fr] items-start gap-x-2">
-              <MapPin className="h-5 w-5 text-gray-500" />
-              <div>
-                <span className="font-medium">Location</span>
-                <p className="text-sm text-gray-500">{appointment.address}</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-[20px_1fr] items-start gap-x-2">
-              <Building className="h-5 w-5 text-gray-500" />
-              <div>
-                <span className="font-medium">Branch</span>
-                <p className="text-sm text-gray-500">{appointment.branch}</p>
-              </div>
-            </div>
-            
-            {appointment.notes && (
-              <div className="grid grid-cols-[20px_1fr] items-start gap-x-2">
-                <Info className="h-5 w-5 text-gray-500" />
-                <div>
-                  <span className="font-medium">Notes</span>
-                  <p className="text-sm text-gray-500">{appointment.notes}</p>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsDetailsOpen(false)}
-              className="sm:w-auto w-full"
-            >
-              Close
-            </Button>
-            {status === 'confirmed' && (
-              <>
-                <Button
-                  variant="outline"
-                  className="sm:w-auto w-full bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-                  onClick={() => {
-                    setIsDetailsOpen(false);
-                    window.location.href = "/dashboard/cancellation";
-                  }}
-                >
-                  Request Cancellation
-                </Button>
-                <Button
-                  variant="outline"
-                  className="sm:w-auto w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
-                  onClick={() => {
-                    setIsDetailsOpen(false);
-                    window.location.href = "/dashboard/reschedule";
-                  }}
-                >
-                  Request Reschedule
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AppointmentDetailsDialog
+        appointment={appointment}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+      />
     </>
   );
 }

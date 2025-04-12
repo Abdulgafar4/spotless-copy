@@ -110,6 +110,17 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
     setIsDetailsOpen(true);
   };
 
+    if (requests.length === 0) {
+      return (
+        <div className="text-center py-10">
+          <AlertTriangle className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+          <h3 className="text-lg font-medium text-gray-900">No reschedule requests</h3>
+          <p className="mt-2 text-sm text-gray-500">
+            You haven't submitted any reschedule requests yet.
+          </p>
+        </div>
+      );
+    }
   return (
     <>
       <div className="space-y-4">

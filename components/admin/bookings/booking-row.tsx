@@ -24,7 +24,6 @@ const getStatusBadge = (status: string) => {
 
   const statusInfo = statusColors[status] || { bg: "", text: "", label: status }
 
-  console.log(statusInfo.label)
   return <span className="flex flex-row gap-2 items-center"><Badge className={`${statusInfo.bg} ${statusInfo.text}`}>{statusInfo.label}</Badge>{statusInfo.label}</span>
 }
 
@@ -38,12 +37,11 @@ export const BookingRow: React.FC<BookingRowProps> = ({
   onMessageCustomer
 }) => (
   <TableRow className="px-6 py-4 whitespace-nowrap">
-    <TableCell className="font-medium">{booking.id}</TableCell>
     <TableCell>
       <div className="flex items-center gap-3">
         <Avatar className="h-8 w-8">
           <AvatarFallback>
-            {booking.customerName.split(' ').map(n => n[0]).join('')}
+            {booking?.customerName?.split(' ').map(n => n[0]).join('')}
           </AvatarFallback>
         </Avatar>
         <div>

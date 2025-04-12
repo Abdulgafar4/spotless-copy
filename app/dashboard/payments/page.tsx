@@ -1,193 +1,331 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { usePayments } from "@/hooks/use-payments";
-import { toast } from "sonner";
-import DashboardLayout from "@/components/dashboard/dashboard-layout";
-import { PendingPayments } from "@/components/dashboard/payments/pending-payments";
-import { Loader2,  FileText, DollarSign } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabaseClient";
 import { PaymentHistory } from "@/components/dashboard/payments/payment-hisotry";
+import { PendingPayments } from "@/components/dashboard/payments/pending-payments";
 import { PaymentMethods } from "@/components/dashboard/payments/payments-methods";
 
-export default function Payments() {
+interface PaymentMethod {
+  id: string;
+  type: "credit_card" | "debit_card" | "paypal" | "bank_account";
+  details: {
+    last4?: string;
+    brand?: string;
+    expiry?: string;
+    name?: string;
+    email?: string;
+    bank_name?: string;
+  };
+  is_default: boolean;
+  user_id: string;
+}
+
+interface Payment {
+  id: string;
+  booking_id: string;
+  amount: number;
+  status: "paid" | "pending" | "refunded" | "failed";
+  method: "credit_card" | "debit_card" | "paypal" | "bank_transfer";
+  date: string;
+  invoice_url?: string;
+  user_id: string;
+  booking?: {
+    id: string;
+    service_type: string;
+    date: string;
+  };
+}
+
+export default function PaymentsPage() {
   const { user } = useAuth();
-  const { 
-    payments, 
-    pendingPayments, 
-    paymentMethods,
-    loading, 
-    error,
-    processPaymentWithSavedMethod,
-    addPaymentMethod,
-    setDefaultPaymentMethod,
-    deletePaymentMethod
-  } = usePayments();
-  
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTab, setActiveTab] = useState("history");
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Auto-switch to the pending tab if there are pending payments
-  useEffect(() => {
-    if (pendingPayments.length > 0 && !loading) {
-      setActiveTab("pending");
+  // Fetch payment methods
+  const fetchPaymentMethods = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from("payment_methods")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      
+      setPaymentMethods(data || []);
+    } catch (err) {
+      console.error("Error fetching payment methods:", err);
+      toast.error("Failed to load payment methods");
+    } finally {
+      setLoading(false);
     }
-  }, [pendingPayments, loading]);
+  }, [user]);
 
-  const handleMakePayment = async (paymentId: string, methodId: string) => {
-    // Find the payment in pending payments
-    const payment = pendingPayments.find((p) => p.id === paymentId);
-    if (!payment) {
-      toast.error("Payment not found");
+  // Fetch payments
+  const fetchPayments = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      // Fetch all payments
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select(`
+          *,
+          booking:booking_id (
+            id,
+            service_type,
+            date
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+
+      if (paymentsError) throw paymentsError;
+      
+      // Split into completed and pending payments
+      const pending = paymentsData?.filter(p => p.status === "pending") || [];
+      const completed = paymentsData?.filter(p => p.status !== "pending") || [];
+      
+      setPayments(completed);
+      setPendingPayments(pending);
+    } catch (err) {
+      console.error("Error fetching payments:", err);
+      toast.error("Failed to load payment history");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    if (user) {
+      fetchPaymentMethods();
+      fetchPayments();
+    }
+  }, [user, fetchPaymentMethods, fetchPayments]);
+
+  // Add payment method
+  const handleAddPaymentMethod = async (paymentMethodData: Omit<PaymentMethod, "id" | "user_id" | "is_default">) => {
+    if (!user) {
+      toast.error("You must be logged in to add a payment method");
+      return {} as PaymentMethod;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Check if this is the first payment method (make it default)
+      const isDefault = paymentMethods.length === 0;
+      
+      // Insert new payment method
+      const { data, error } = await supabase
+        .from("payment_methods")
+        .insert([
+          {
+            ...paymentMethodData,
+            user_id: user.id,
+            is_default: isDefault
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      toast.success("Payment method added successfully");
+      
+      // Refresh payment methods
+      await fetchPaymentMethods();
+      
+      return data;
+    } catch (err) {
+      console.error("Error adding payment method:", err);
+      toast.error("Failed to add payment method");
+      return {} as PaymentMethod;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Set default payment method
+  const handleSetDefaultPaymentMethod = async (paymentMethodId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to update payment methods");
       return false;
     }
 
-    return await processPaymentWithSavedMethod({
-      booking_id: payment.booking_id,
-      payment_method_id: methodId,
-      amount: payment.amount,
-      return_url: `${window.location.origin}/dashboard/payments`
-    });
+    try {
+      setLoading(true);
+      
+      // First, set all payment methods to non-default
+      const { error: updateError } = await supabase
+        .from("payment_methods")
+        .update({ is_default: false })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+      
+      // Then set the selected one as default
+      const { error: setDefaultError } = await supabase
+        .from("payment_methods")
+        .update({ is_default: true })
+        .eq("id", paymentMethodId)
+        .eq("user_id", user.id);
+
+      if (setDefaultError) throw setDefaultError;
+      
+      toast.success("Default payment method updated");
+      await fetchPaymentMethods();
+      return true;
+    } catch (err) {
+      console.error("Error setting default payment method:", err);
+      toast.error("Failed to update default payment method");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete payment method
+  const handleDeletePaymentMethod = async (paymentMethodId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to delete a payment method");
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      
+      // First check if this is the default payment method
+      const methodToDelete = paymentMethods.find(m => m.id === paymentMethodId);
+      
+      if (!methodToDelete) {
+        throw new Error("Payment method not found");
+      }
+      
+      // Delete the payment method
+      const { error } = await supabase
+        .from("payment_methods")
+        .delete()
+        .eq("id", paymentMethodId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      
+      // If this was the default payment method, set a new default
+      if (methodToDelete.is_default && paymentMethods.length > 1) {
+        const newDefault = paymentMethods.find(m => m.id !== paymentMethodId);
+        if (newDefault) {
+          await supabase
+            .from("payment_methods")
+            .update({ is_default: true })
+            .eq("id", newDefault.id);
+        }
+      }
+      
+      toast.success("Payment method removed successfully");
+      await fetchPaymentMethods();
+      return true;
+    } catch (err) {
+      console.error("Error deleting payment method:", err);
+      toast.error("Failed to remove payment method");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Make a payment
+  const handleMakePayment = async (paymentId: string, methodId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to make a payment");
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      
+      // In a real app, this would involve a payment processor
+      // Here we'll just update the payment status
+      const { error } = await supabase
+        .from("payments")
+        .update({ 
+          status: "paid", 
+          method: paymentMethods.find(m => m.id === methodId)?.type || "credit_card" 
+        })
+        .eq("id", paymentId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      
+      toast.success("Payment completed successfully");
+      await fetchPayments();
+      return true;
+    } catch (err) {
+      console.error("Error processing payment:", err);
+      toast.error("Failed to process payment");
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <DashboardLayout>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Payments</h2>
+        <p className="text-muted-foreground">
+          Manage your payments, billing history, and payment methods
+        </p>
+      </div>
+
+      <Tabs defaultValue="history" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pending" className="relative">
-            Pending Payments
-            {pendingPayments.length > 0 && (
-              <span className="absolute top-0 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                {pendingPayments.length}
-              </span>
-            )}
-          </TabsTrigger>
           <TabsTrigger value="history">Payment History</TabsTrigger>
+          <TabsTrigger value="pending">Pending Payments</TabsTrigger>
           <TabsTrigger value="methods">Payment Methods</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="pending">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">Pending Payments</CardTitle>
-              <CardDescription>
-                Complete payments for your upcoming services
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center items-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                </div>
-              ) : error ? (
-                <div className="p-8 text-center text-red-500">
-                  <p>Error loading pending payments</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-2"
-                    onClick={() => window.location.reload()}
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              ) : pendingPayments.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <DollarSign className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                  <p className="font-medium">No pending payments</p>
-                  <p className="text-sm mt-1">You're all caught up! There are no pending payments.</p>
-                </div>
-              ) : (
-                <PendingPayments 
-                  payments={pendingPayments} 
-                  paymentMethods={paymentMethods}
-                  onMakePayment={handleMakePayment}
-                />
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="history" className="space-y-4 mt-6">
+          <PaymentHistory payments={payments} />
         </TabsContent>
         
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">Payment History</CardTitle>
-              <CardDescription>
-                View your past payments and download invoices
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center items-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                </div>
-              ) : error ? (
-                <div className="p-8 text-center text-red-500">
-                  <p>Error loading payment history</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-2"
-                    onClick={() => window.location.reload()}
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              ) : payments.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <FileText className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                  <p className="font-medium">No payment history found</p>
-                  <p className="text-sm mt-1">You haven't made any payments yet</p>
-                </div>
-              ) : (
-                <PaymentHistory payments={payments} />
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="pending" className="space-y-4 mt-6">
+          {pendingPayments.length > 0 ? (
+            <PendingPayments 
+              payments={pendingPayments} 
+              paymentMethods={paymentMethods}
+              onMakePayment={handleMakePayment}
+            />
+          ) : (
+            <div className="text-center py-12 border rounded-lg">
+              <h3 className="text-lg font-medium">No Pending Payments</h3>
+              <p className="text-gray-500 mt-2">You don't have any pending payments at the moment.</p>
+            </div>
+          )}
         </TabsContent>
         
-        <TabsContent value="methods">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">Payment Methods</CardTitle>
-              <CardDescription>
-                Manage your payment methods and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center items-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                </div>
-              ) : error ? (
-                <div className="p-8 text-center text-red-500">
-                  <p>Error loading payment methods</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-2"
-                    onClick={() => window.location.reload()}
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              ) : (
-                <PaymentMethods
-                  paymentMethods={paymentMethods} 
-                  onAddPaymentMethod={addPaymentMethod}
-                  onSetDefault={setDefaultPaymentMethod}
-                  onDelete={deletePaymentMethod}
-                />
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="methods" className="space-y-4 mt-6">
+          <PaymentMethods 
+            paymentMethods={paymentMethods}
+            onAddPaymentMethod={handleAddPaymentMethod}
+            onSetDefault={handleSetDefaultPaymentMethod}
+            onDelete={handleDeletePaymentMethod}
+          />
         </TabsContent>
       </Tabs>
-    </DashboardLayout>
+    </div>
   );
 }
