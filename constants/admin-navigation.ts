@@ -26,12 +26,12 @@ export const getAdminNavigation = (pathname?: string) => [
         pathname === "/admin/branches" ||
         pathname?.startsWith("/admin/branches/"),
     },
-    {
-      name: "Scheduling",
-      href: "/admin/scheduling",
-      icon: Calendar,
-      current: pathname === "/admin/scheduling",
-    },
+    // {
+    //   name: "Scheduling",
+    //   href: "/admin/scheduling",
+    //   icon: Calendar,
+    //   current: pathname === "/admin/scheduling",
+    // },
     {
       name: "Bookings",
       href: "/admin/bookings",

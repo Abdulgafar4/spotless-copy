@@ -11,7 +11,8 @@ export const BookingFilters: React.FC<BookingFiltersProps> = ({
     dateFilter, 
     setDateFilter, 
     branchFilter, 
-    setBranchFilter 
+    setBranchFilter,
+    disabled
   }) => (
     <div className="flex flex-col sm:flex-row gap-2">
       <div className="relative">
@@ -21,6 +22,7 @@ export const BookingFilters: React.FC<BookingFiltersProps> = ({
           className="pl-8"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          disabled={disabled}
         />
       </div>
       <div className="flex gap-2">
@@ -51,6 +53,7 @@ export const BookingFilters: React.FC<BookingFiltersProps> = ({
             key={placeholder}
             value={value}
             onValueChange={onChange}
+            disabled={disabled}
           >
             <SelectTrigger className={width}>
               <SelectValue placeholder={placeholder} />

@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { 
   Star, 
@@ -20,14 +20,13 @@ import {
   User, 
   Mail, 
   Calendar, 
-  Clock, 
-  Building, 
-  Users,
+  Clock,
   MessageCircle,
   Flag,
   Eye,
   Image as ImageIcon
 } from "lucide-react"
+import { useReviews } from "@/hooks/use-reviews"
 
 interface FeedbackDetailsDialogProps {
   isOpen: boolean
@@ -41,17 +40,7 @@ export function FeedbackDetailsDialog({
   feedback
 }: FeedbackDetailsDialogProps) {
   const [responseText, setResponseText] = useState("")
-
-  // Handle submitting a response
-  const handleSubmitResponse = () => {
-    if (!responseText.trim()) return
-    
-    // In a real app, this would send the response to the backend
-    console.log("Submitting response:", responseText)
-    
-    // Clear response field
-    setResponseText("")
-  }
+  const { updateReview } = useReviews();
 
   if (!feedback) return null
 
@@ -86,22 +75,22 @@ export function FeedbackDetailsDialog({
               <div className="flex items-start gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarFallback>
-                    {feedback.customerName.split(' ').map((name: string) => name[0]).join('')}
+                    {feedback.user_name.split(' ').map((name: string) => name[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-lg font-medium">{feedback.customerName}</h3>
+                  <h3 className="text-lg font-medium">{feedback.user_name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex">{renderStars(feedback.rating)}</div>
                   </div>
                   <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      <span>{format(new Date(feedback.date), "MMMM d, yyyy")}</span>
+                      <span>{format(new Date(feedback.created_at), "MMMM d, yyyy")}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      <span>{format(new Date(feedback.date), "h:mm a")}</span>
+                      <span>{format(new Date(feedback.created_at), "h:mm a")}</span>
                     </div>
                   </div>
                 </div>
@@ -114,30 +103,6 @@ export function FeedbackDetailsDialog({
                 </div>
               </div>
 
-              {feedback.images.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Attached Images:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {feedback.images.map((image: string, index: number) => (
-                      <div key={index} className="relative w-24 h-24 rounded border overflow-hidden">
-                        {/* Replace with actual image loading if you have the URLs */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                          <ImageIcon className="h-8 w-8 text-gray-400" />
-                        </div>
-                        <Button 
-                          variant="secondary" 
-                          size="sm" 
-                          className="absolute bottom-0 left-0 right-0 m-1"
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
               {feedback.response && (
                 <div>
                   <h4 className="font-medium mb-2">Our Response:</h4>
@@ -155,56 +120,22 @@ export function FeedbackDetailsDialog({
                 </div>
               )}
               
-              {!feedback.response && (
-                <div>
-                  <h4 className="font-medium mb-2">Respond to Feedback:</h4>
-                  <Textarea
-                    placeholder="Type your response here..."
-                    value={responseText}
-                    onChange={(e) => setResponseText(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <Button 
-                    className="mt-2" 
-                    onClick={handleSubmitResponse}
-                    disabled={!responseText.trim()}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Response
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
           
           <div>
             <div className="border rounded-md p-4 space-y-4">
               <div>
-                <h4 className="font-medium mb-2">Service Details</h4>
+                <h4 className="font-medium mb-2">Booking Details</h4>
                 <div className="space-y-2">
-                  <div className="flex items-center text-sm">
-                    <Building className="h-4 w-4 mr-2 text-gray-500" />
-                    <span>
-                      <span className="font-medium">Branch:</span> {feedback.branch}
-                    </span>
-                  </div>
-                  <div className="flex items-start text-sm">
-                    <Users className="h-4 w-4 mr-2 mt-0.5 text-gray-500" />
-                    <div>
-                      <span className="font-medium">Staff:</span>
-                      <ul className="mt-1 space-y-1">
-                        {feedback.staff.map((staffName: string, index: number) => (
-                          <li key={index}>{staffName}</li>
-                        ))}
-                      </ul>
+                  {feedback.booking_id && (
+                    <div className="flex items-center text-sm">
+                      <MessageCircle className="h-4 w-4 mr-2 text-gray-500" />
+                      <span>
+                        <span className="font-medium">Booking ID:</span> #{feedback.booking_id}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <MessageCircle className="h-4 w-4 mr-2 text-gray-500" />
-                    <span>
-                      <span className="font-medium">Service:</span> {feedback.service}
-                    </span>
-                  </div>
+                  )}
                 </div>
               </div>
               
@@ -215,33 +146,15 @@ export function FeedbackDetailsDialog({
                 <div className="space-y-2">
                   <div className="flex items-center text-sm">
                     <User className="h-4 w-4 mr-2 text-gray-500" />
-                    <span>{feedback.customerName}</span>
+                    <span>{feedback.user_name}</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                    <a href={`mailto:${feedback.customerEmail}`} className="text-blue-600 hover:underline">
-                      {feedback.customerEmail}
+                    <a href={`mailto:${feedback.user_email}`} className="text-blue-600 hover:underline">
+                      {feedback.user_email}
                     </a>
                   </div>
                 </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full">
-                  {feedback.status === "published" ? "Unpublish Review" : "Publish Review"}
-                </Button>
-                <Button variant="outline" className="w-full">
-                  {feedback.status === "flagged" ? (
-                    <>Remove Flag</>
-                  ) : (
-                    <>
-                      <Flag className="h-4 w-4 mr-2 text-red-500" />
-                      Flag Review
-                    </>
-                  )}
-                </Button>
               </div>
             </div>
           </div>

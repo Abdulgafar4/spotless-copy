@@ -72,6 +72,7 @@ interface Booking {
   id: string;
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
   service: string;
   branch: string;
   date: string;
@@ -116,6 +117,7 @@ interface BookingFiltersProps {
   setDateFilter: (filter: string) => void;
   branchFilter: string;
   setBranchFilter: (filter: string) => void;
+  disabled?: boolean
 }
 
 interface BookingActionsProps {
@@ -168,4 +170,25 @@ interface Service {
   createdAt?: string;
   updatedAt?: string;
   imageUrl?: string;
+}
+
+type BookingStatus = 
+  | "pending"
+  | "confirmed"
+  | "in-progress"
+  | "completed"
+  | "cancelled"
+  | "rejected";
+
+
+interface Review {
+  id: string;
+  user_id: string;
+  booking_id?: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+  user_name?: string;
+  user_email?: string;
 }

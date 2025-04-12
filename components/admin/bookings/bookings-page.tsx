@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   ChevronLeft,
   ChevronRight,
   Printer,
   Download,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
 import {
   Card,
@@ -21,51 +23,64 @@ import { BookingDetailsDialog } from "@/components/admin/bookings/booking-detail
 import { ConfirmActionDialog } from "@/components/admin/bookings/confirm-dialog"
 import { AssignStaffDialog } from "@/components/admin/bookings/assign-staff"
 import { MessageCustomerDialog } from "@/components/admin/bookings/message-customer"
-import { mockBookings } from "../adminDummyData"
 import { BookingOverviewCards } from "./booking-overview"
 import { BookingFilters } from "./booking-filter"
 import { BookingsTable } from "./booking-table"
+import { useAdminBookings } from "@/hooks/use-booking"
 
 
 export default function BookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
   const [branchFilter, setBranchFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
-  
+
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction>({ 
-    action: "", title: "", description: "" 
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>({
+    action: "", title: "", description: ""
   })
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false)
-  
+
+  const {
+    bookings,
+    loading,
+    error,
+    fetchBookings,
+    updateBookingStatus,
+    assignStaffToBooking,
+  } = useAdminBookings();
+
   const itemsPerPage = 10
+
+  useEffect(() => {
+    fetchBookings()
+  }, [fetchBookings])
+
 
   // Filtering and Sorting Logic
   const filterBookings = (bookings: Booking[]) => {
     return bookings.filter(booking => {
       // Search filter
-      const matchesSearch = 
+      const matchesSearch =
         booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.address.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       // Status filter
       const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
-      
+
       // Date filter (using today as reference point)
       const bookingDate = new Date(booking.date);
       const today = new Date();
       const isToday = bookingDate.toDateString() === today.toDateString();
       const isTomorrow = new Date(today.setDate(today.getDate() + 1)).toDateString() === bookingDate.toDateString();
       const isThisWeek = new Date(bookingDate) <= new Date(new Date().setDate(new Date().getDate() + 7));
-      
+
       let matchesDate = true;
       if (dateFilter === "today") {
         matchesDate = isToday;
@@ -74,10 +89,10 @@ export default function BookingsPage() {
       } else if (dateFilter === "this-week") {
         matchesDate = isThisWeek;
       }
-      
+
       // Branch filter
       const matchesBranch = branchFilter === "all" || booking.branch.toLowerCase().includes(branchFilter.toLowerCase());
-      
+
       return matchesSearch && matchesStatus && matchesDate && matchesBranch;
     });
   }
@@ -91,13 +106,13 @@ export default function BookingsPage() {
     }, {} as Record<string, number>);
 
     // Calculate upcoming bookings
-    const upcomingBookings = bookings.filter(booking => 
-      new Date(booking.date) > new Date() && 
+    const upcomingBookings = bookings.filter(booking =>
+      new Date(booking.date) > new Date() &&
       (booking.status === "confirmed" || booking.status === "pending")
     ).length;
 
     // Calculate today's bookings
-    const todayBookings = bookings.filter(booking => 
+    const todayBookings = bookings.filter(booking =>
       new Date(booking.date).toDateString() === new Date().toDateString()
     ).length;
 
@@ -126,50 +141,42 @@ export default function BookingsPage() {
 
   const handleUpdateStatus = (booking: Booking, newStatus: string) => {
     const statusActions: Record<string, { title: string; description: string }> = {
-      "confirmed": { 
-        title: "Confirm Booking", 
-        description: "Are you sure you want to confirm this booking?" 
+      "confirmed": {
+        title: "Confirm Booking",
+        description: "Are you sure you want to confirm this booking?"
       },
-      "cancelled": { 
-        title: "Cancel Booking", 
-        description: "Are you sure you want to cancel this booking?" 
+      "cancelled": {
+        title: "Cancel Booking",
+        description: "Are you sure you want to cancel this booking?"
       },
-      "completed": { 
-        title: "Mark as Completed", 
-        description: "Are you sure you want to mark this booking as completed?" 
+      "completed": {
+        title: "Mark as Completed",
+        description: "Are you sure you want to mark this booking as completed?"
       },
-      "rejected": { 
-        title: "Reject Booking", 
-        description: "Are you sure you want to reject this booking?" 
+      "rejected": {
+        title: "Reject Booking",
+        description: "Are you sure you want to reject this booking?"
       }
     }
-    
+
     setSelectedBooking(booking)
-    setConfirmAction({ 
-      action: newStatus, 
-      title: statusActions[newStatus]?.title || "", 
-      description: statusActions[newStatus]?.description || "" 
+    setConfirmAction({
+      action: newStatus,
+      title: statusActions[newStatus]?.title || "",
+      description: statusActions[newStatus]?.description || ""
     })
     setIsConfirmDialogOpen(true)
   }
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (!selectedBooking) return;
-    
-    // Process the status change
-    const updatedBookings = bookings.map(booking => {
-      if (booking.id === selectedBooking.id) {
-        return { 
-          ...booking, 
-          status: confirmAction.action,
-          modified: new Date().toISOString()
-        };
-      }
-      return booking;
-    });
-    
-    setBookings(updatedBookings)
-    setIsConfirmDialogOpen(false)
+
+    try {
+      await updateBookingStatus(selectedBooking.id, confirmAction.action as BookingStatus);
+      setIsConfirmDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to update booking status:", error);
+    }
   }
 
   const handleAssignStaff = (booking: Booking) => {
@@ -177,23 +184,17 @@ export default function BookingsPage() {
     setIsAssignDialogOpen(true)
   }
 
-  const handleAssignStaffSubmit = (staffList: string[]) => {
+  const handleAssignStaffSubmit = async (staffList: string[]) => {
     if (!selectedBooking) return;
-    
-    // Update the booking with assigned staff
-    const updatedBookings = bookings.map(booking => {
-      if (booking.id === selectedBooking.id) {
-        return { 
-          ...booking, 
-          assignedStaff: staffList,
-          modified: new Date().toISOString()
-        };
-      }
-      return booking;
-    });
-    
-    setBookings(updatedBookings)
-    setIsAssignDialogOpen(false)
+
+    try {
+      // In a real implementation, you would map staff names to IDs
+      // For now, we'll assume staffList contains IDs
+      await assignStaffToBooking(selectedBooking.id, staffList);
+      setIsAssignDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to assign staff:", error);
+    }
   }
 
   const handleMessageCustomer = (booking: Booking) => {
@@ -209,11 +210,11 @@ export default function BookingsPage() {
 
   // Filtered and Paginated Bookings
   const filteredBookings = filterBookings(bookings)
-  const { 
-    sortedBookings, 
-    totalPages, 
-    startIndex, 
-    paginatedBookings 
+  const {
+    sortedBookings,
+    totalPages,
+    startIndex,
+    paginatedBookings
   } = paginateBookings(filteredBookings)
 
   // Booking Metrics
@@ -224,24 +225,32 @@ export default function BookingsPage() {
       <div className="flex flex-col space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Bookings Management</h1>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <Printer className="mr-2 h-4 w-4" />
-              Print
-            </Button>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-          </div>
         </div>
 
-        <BookingOverviewCards
-          bookings={bookings}
-          upcomingBookings={upcomingBookings}
-          todayBookings={todayBookings}
-          countByStatus={countByStatus}
-        />
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader className="py-4">
+                  <CardTitle className="text-lg">
+                    <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <BookingOverviewCards
+            bookings={bookings}
+            upcomingBookings={upcomingBookings}
+            todayBookings={todayBookings}
+            countByStatus={countByStatus}
+          />
+        )}
 
         <Card>
           <CardHeader>
@@ -265,6 +274,42 @@ export default function BookingsPage() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Loading state */}
+            {loading && (
+              <div className="">
+                <div className="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-2">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span>Loading bookings...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Error state */}
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      Error loading bookings
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      {error.message}
+                      <button
+                        type="button"
+                        className="ml-2 text-sm font-medium text-red-800 hover:text-red-700 underline"
+                        onClick={fetchBookings}
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <BookingsTable
               paginatedBookings={paginatedBookings}
               filteredBookings={filteredBookings}

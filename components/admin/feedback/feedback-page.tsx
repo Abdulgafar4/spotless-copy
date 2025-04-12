@@ -7,16 +7,15 @@ import {
   Star,
   ThumbsUp,
   ThumbsDown,
-  Calendar,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
   MessageCircle,
   Filter,
-  SlidersHorizontal,
   Flag,
-  Pin,
-  RotateCcw
+  RotateCcw,
+  Loader2,
+  AlertCircle
 } from "lucide-react"
 import {
   Card,
@@ -37,122 +36,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { FeedbackDetailsDialog } from "@/components/admin/feedback/feedbackDetails"
 import AdminLayout from "@/components/admin/admin-layout"
-
-// Mock feedback data
-const mockFeedback = [
-  {
-    id: 1,
-    customerName: "John Smith",
-    customerEmail: "john.smith@example.com",
-    service: "Move-Out Cleaning",
-    branch: "Toronto Downtown",
-    staff: ["Emma Wilson", "David Lee"],
-    rating: 5,
-    comment: "Excellent service! The team was on time, professional, and thorough. My landlord was impressed with how clean the apartment was. I'll definitely use this service again when I move next time.",
-    date: "2025-04-05T14:30:00",
-    status: "published",
-    response: null,
-    images: [
-      "https://example.com/feedback/image1.jpg",
-      "https://example.com/feedback/image2.jpg"
-    ]
-  },
-  {
-    id: 2,
-    customerName: "Sarah Johnson",
-    customerEmail: "sarah.j@example.com",
-    service: "Deep Cleaning",
-    branch: "Mississauga",
-    staff: ["Michael Brown", "Jessica Clark"],
-    rating: 4,
-    comment: "Very satisfied with the cleaning job. The team was professional and did a great job overall. The only small issue was they missed cleaning inside the oven, but everything else was perfect.",
-    date: "2025-04-03T09:45:00",
-    status: "published",
-    response: "Thank you for your feedback, Sarah! We're glad you were satisfied with our service. We apologize for missing the oven cleaning and will make sure our teams double-check all appliances in the future.",
-    images: []
-  },
-  {
-    id: 3,
-    customerName: "Michael Chen",
-    customerEmail: "mchen@example.com",
-    service: "Move-In Cleaning",
-    branch: "North York",
-    staff: ["Laura Taylor", "Mark Anderson"],
-    rating: 2,
-    comment: "Disappointed with the service. The team arrived an hour late and seemed rushed. Several areas were not properly cleaned, including bathroom corners and kitchen cabinets. Not worth the price paid.",
-    date: "2025-04-02T16:20:00",
-    status: "pending",
-    response: null,
-    images: [
-      "https://example.com/feedback/image3.jpg"
-    ]
-  },
-  {
-    id: 4,
-    customerName: "Emily Wilson",
-    customerEmail: "emily.w@example.com",
-    service: "Carpet Cleaning",
-    branch: "Etobicoke",
-    staff: ["Kevin Wilson"],
-    rating: 5,
-    comment: "Amazing results! Our carpets haven't looked this good in years. Kevin was professional, explained the process clearly, and finished ahead of schedule. Highly recommend!",
-    date: "2025-04-01T11:15:00",
-    status: "published",
-    response: "Thank you for your kind words, Emily! We're thrilled that you're happy with the results. Kevin is one of our best technicians, and we'll pass along your compliments.",
-    images: []
-  },
-  {
-    id: 5,
-    customerName: "Robert Davis",
-    customerEmail: "rdavis@example.com",
-    service: "Window Cleaning",
-    branch: "Toronto Downtown",
-    staff: ["James Martin", "Nicole Brown"],
-    rating: 3,
-    comment: "The service was okay. Windows are clean but there were some streaks left on several panes. The team was friendly and professional though.",
-    date: "2025-03-30T13:40:00",
-    status: "published",
-    response: null,
-    images: []
-  },
-  {
-    id: 6,
-    customerName: "Jennifer Lee",
-    customerEmail: "jlee@example.com",
-    service: "Move-Out Cleaning",
-    branch: "Ottawa Central",
-    staff: ["Christopher White", "Elizabeth Davis"],
-    rating: 1,
-    comment: "Terrible experience. The cleaning was inadequate, and I ended up losing part of my security deposit because of areas they missed. They also damaged a wall fixture and refused to take responsibility.",
-    date: "2025-03-29T10:25:00",
-    status: "flagged",
-    response: null,
-    images: [
-      "https://example.com/feedback/image4.jpg",
-      "https://example.com/feedback/image5.jpg"
-    ]
-  },
-  {
-    id: 7,
-    customerName: "David Thompson",
-    customerEmail: "david.t@example.com",
-    service: "Appliance Cleaning",
-    branch: "Mississauga",
-    staff: ["Susan White"],
-    rating: 5,
-    comment: "Susan did an incredible job cleaning our appliances. The oven and refrigerator look brand new! Very impressed with the attention to detail.",
-    date: "2025-03-28T15:10:00",
-    status: "published",
-    response: "Thank you for your feedback, David! We're glad Susan was able to exceed your expectations. We pride ourselves on our attention to detail.",
-    images: []
-  },
-]
+import { useReviews } from "@/hooks/use-reviews"
 
 export default function FeedbackPage() {
-  const [feedback, setFeedback] = useState(mockFeedback)
+  const {
+    reviews,
+    loading,
+    error,
+    fetchReviews,
+    updateReview,
+    deleteReview
+  } = useReviews();
+
   const [searchTerm, setSearchTerm] = useState("")
   const [ratingFilter, setRatingFilter] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -161,15 +59,13 @@ export default function FeedbackPage() {
   const itemsPerPage = 5
 
   // Filter feedback based on search term and rating
-  const filteredFeedback = feedback.filter(item => {
-    const matchesSearch = 
-      item.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.branch.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredFeedback = reviews.filter(item => {
+    const matchesSearch =
+      item?.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.comment.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesRating = ratingFilter === null || item.rating === ratingFilter;
-    
+
     return matchesSearch && matchesRating;
   });
 
@@ -185,12 +81,12 @@ export default function FeedbackPage() {
   }
 
   // Calculate average rating
-  const averageRating = feedback.length > 0
-    ? (feedback.reduce((sum, item) => sum + item.rating, 0) / feedback.length).toFixed(1)
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length).toFixed(1)
     : "0.0";
 
   // Count feedback by rating
-  const ratingCounts = feedback.reduce((counts, item) => {
+  const ratingCounts = reviews.reduce((counts, item) => {
     counts[item.rating] = (counts[item.rating] || 0) + 1;
     return counts;
   }, {} as Record<number, number>);
@@ -204,13 +100,65 @@ export default function FeedbackPage() {
     ))
   }
 
+  // Handle review deletion
+  const handleDeleteReview = async (id: string) => {
+    try {
+      await deleteReview(id);
+      fetchReviews(); // Refresh the list
+    } catch (error) {
+      console.error("Failed to delete review:", error);
+    }
+  };
+
+  if (loading && !reviews.length) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 mx-auto text-red-500" />
+            <h3 className="mt-2 text-lg font-medium">Error loading feedback</h3>
+            <p className="mt-1 text-sm text-gray-500">{error.message}</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={fetchReviews}
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="flex flex-col space-y-6">
+        {/* Loading overlay for subsequent loads */}
+        {loading && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-2">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span>Loading feedback...</span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Customer Feedback</h1>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="py-4">
@@ -221,10 +169,10 @@ export default function FeedbackPage() {
                 <span className="text-3xl font-bold mr-2">{averageRating}</span>
                 <div className="flex">{renderStars(Math.round(parseFloat(averageRating)))}</div>
               </div>
-              <p className="text-sm text-gray-500 mt-1">From {feedback.length} reviews</p>
+              <p className="text-sm text-gray-500 mt-1">From {reviews.length} reviews</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="py-4">
               <CardTitle className="text-lg">Rating Distribution</CardTitle>
@@ -240,7 +188,7 @@ export default function FeedbackPage() {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-green-500 h-2 rounded-full"
-                      style={{ width: `${(ratingCounts[rating] || 0) / feedback.length * 100}%` }}
+                      style={{ width: `${(ratingCounts[rating] || 0) / reviews.length * 100}%` }}
                     ></div>
                   </div>
                   <span className="text-sm text-gray-500 min-w-[30px] text-right">
@@ -250,7 +198,7 @@ export default function FeedbackPage() {
               ))}
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="py-4">
               <CardTitle className="text-lg">Positive Feedback</CardTitle>
@@ -260,14 +208,14 @@ export default function FeedbackPage() {
                 <ThumbsUp className="h-8 w-8 text-green-500 mr-3" />
                 <div>
                   <div className="text-3xl font-bold">
-                    {(feedback.filter(item => item.rating >= 4).length / feedback.length * 100).toFixed(0)}%
+                    {(reviews.filter(item => item.rating >= 4).length / reviews.length * 100 || 1).toFixed(0)}%
                   </div>
                   <p className="text-sm text-gray-500">rated 4-5 stars</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="py-4">
               <CardTitle className="text-lg">Negative Feedback</CardTitle>
@@ -277,7 +225,7 @@ export default function FeedbackPage() {
                 <ThumbsDown className="h-8 w-8 text-red-500 mr-3" />
                 <div>
                   <div className="text-3xl font-bold">
-                    {(feedback.filter(item => item.rating <= 2).length / feedback.length * 100).toFixed(0)}%
+                    {(reviews.filter(item => item.rating <= 2).length / reviews.length * 100 || 1).toFixed(0)}%
                   </div>
                   <p className="text-sm text-gray-500">rated 1-2 stars</p>
                 </div>
@@ -286,6 +234,7 @@ export default function FeedbackPage() {
           </Card>
         </div>
 
+        {/* Reviews List */}
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -303,11 +252,12 @@ export default function FeedbackPage() {
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" disabled={loading}>
                       <Filter className="mr-2 h-4 w-4" />
                       Filter
                     </Button>
@@ -316,36 +266,14 @@ export default function FeedbackPage() {
                     <DropdownMenuLabel>Filter by Rating</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setRatingFilter(null)}>All Ratings</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setRatingFilter(5)}>
-                      <div className="flex items-center">
-                        {renderStars(5)}
-                        <span className="ml-2">5 stars</span>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setRatingFilter(4)}>
-                      <div className="flex items-center">
-                        {renderStars(4)}
-                        <span className="ml-2">4 stars</span>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setRatingFilter(3)}>
-                      <div className="flex items-center">
-                        {renderStars(3)}
-                        <span className="ml-2">3 stars</span>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setRatingFilter(2)}>
-                      <div className="flex items-center">
-                        {renderStars(2)}
-                        <span className="ml-2">2 stars</span>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setRatingFilter(1)}>
-                      <div className="flex items-center">
-                        {renderStars(1)}
-                        <span className="ml-2">1 star</span>
-                      </div>
-                    </DropdownMenuItem>
+                    {[5, 4, 3, 2, 1].map(rating => (
+                      <DropdownMenuItem key={rating} onClick={() => setRatingFilter(rating)}>
+                        <div className="flex items-center">
+                          {renderStars(rating)}
+                          <span className="ml-2">{rating} stars</span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -361,37 +289,25 @@ export default function FeedbackPage() {
                         <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
                             <AvatarFallback>
-                              {item.customerName.split(' ').map(name => name[0]).join('')}
+                              {item?.user_name?.split(' ').map(name => name[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <h3 className="font-medium">{item.customerName}</h3>
+                            <h3 className="font-medium">{item.user_name}</h3>
                             <div className="flex items-center gap-2 mt-1">
                               <div className="flex">
                                 {renderStars(item.rating)}
                               </div>
                               <span className="text-sm text-gray-500">
-                                {format(new Date(item.date), "MMM d, yyyy")}
+                                {format(new Date(item.created_at), "MMM d, yyyy")}
                               </span>
                             </div>
                             <div className="text-sm text-gray-500 mt-1">
-                              <span className="font-medium">{item.service}</span> • {item.branch}
+                              {item.booking_id && `Booking #${item.booking_id}`}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {item.status === "flagged" && (
-                            <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-                              <Flag className="h-3 w-3 mr-1" />
-                              Flagged
-                            </Badge>
-                          )}
-                          {item.status === "pending" && (
-                            <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-                              <RotateCcw className="h-3 w-3 mr-1" />
-                              Pending
-                            </Badge>
-                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
@@ -402,16 +318,13 @@ export default function FeedbackPage() {
                               <DropdownMenuItem onClick={() => handleViewFeedback(item)}>
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem>Respond to Review</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                {item.status === "published" ? "Unpublish" : "Publish"}
+
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteReview(item.id)}
+                              >
+                                Delete
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                {item.status === "flagged" ? "Remove Flag" : "Flag Review"}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -419,49 +332,20 @@ export default function FeedbackPage() {
 
                       <div className="mt-4">
                         <p className="text-gray-700">
-                          {item.comment.length > 200 
-                            ? `${item.comment.substring(0, 200)}...` 
+                          {item.comment.length > 200
+                            ? `${item.comment.substring(0, 200)}...`
                             : item.comment}
                         </p>
                         {item.comment.length > 200 && (
-                          <Button 
-                            variant="link" 
-                            className="px-0 h-auto font-medium" 
+                          <Button
+                            variant="link"
+                            className="px-0 h-auto font-medium"
                             onClick={() => handleViewFeedback(item)}
                           >
                             Read more
                           </Button>
                         )}
                       </div>
-
-                      {item.images.length > 0 && (
-                        <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm">
-                            View {item.images.length} Image{item.images.length > 1 ? 's' : ''}
-                          </Button>
-                        </div>
-                      )}
-
-                      {item.response && (
-                        <div className="mt-4 pt-4 border-t">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback>ST</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="flex items-center">
-                                <span className="font-medium">Spotless Transitions</span>
-                                <MessageCircle className="h-3 w-3 ml-2 text-gray-500" />
-                              </div>
-                              <p className="text-sm text-gray-700 mt-1">
-                                {item.response.length > 150 
-                                  ? `${item.response.substring(0, 150)}...` 
-                                  : item.response}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </Card>
                 ))
@@ -470,8 +354,8 @@ export default function FeedbackPage() {
                   <MessageCircle className="h-10 w-10 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium">No feedback found</h3>
                   <p className="text-gray-500 text-center mt-2">
-                    {searchTerm || ratingFilter 
-                      ? "Try adjusting your search or filter" 
+                    {searchTerm || ratingFilter
+                      ? "Try adjusting your search or filter"
                       : "No customer feedback yet"}
                   </p>
                 </div>
@@ -492,7 +376,7 @@ export default function FeedbackPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  disabled={currentPage === 1 || loading}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -500,7 +384,7 @@ export default function FeedbackPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage === totalPages || loading}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -516,4 +400,5 @@ export default function FeedbackPage() {
         feedback={selectedFeedback}
       />
     </AdminLayout>
-  )}
+  )
+}

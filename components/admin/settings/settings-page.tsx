@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -27,17 +27,20 @@ import {
   Eye, 
   EyeOff, 
   Check,
+  Loader2
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import AdminLayout from "@/components/admin/admin-layout"
+import { useSettings } from "@/hooks/use-settings"
+import { toast } from "sonner"
 
 // Define the form schemas
 const accountSettingsSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   currentPassword: z.string().min(1, { message: "Current password is required" }),
-  newPassword: z.string().min(8, { message: "Password must be at least 8 characters" }).optional(),
-  confirmPassword: z.string().optional(),
+  newPassword: z.string().min(8, { message: "Password must be at least 8 characters" }).optional().or(z.literal("")),
+  confirmPassword: z.string().optional().or(z.literal("")),
 }).refine((data) => {
   if (data.newPassword && data.newPassword !== data.confirmPassword) {
     return false;
@@ -48,50 +51,87 @@ const accountSettingsSchema = z.object({
   path: ["confirmPassword"],
 });
 
-
 export default function AccountSettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [accountUpdated, setAccountUpdated] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Initialize forms
+  const { userSettings, loading, error, updateSettings, updatePassword } = useSettings()
+
+  // Initialize form
   const accountForm = useForm<z.infer<typeof accountSettingsSchema>>({
     resolver: zodResolver(accountSettingsSchema),
     defaultValues: {
-      name: "Admin User",
-      email: "admin@spotlesstransitions.com",
+      name: "",
+      email: "",
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
     },
   })
 
-  // Form submission handlers
-  const onSubmitAccountSettings = (data: z.infer<typeof accountSettingsSchema>) => {
-    console.log("Account settings updated:", data)
-    setAccountUpdated(true)
-    // Reset password fields
-    accountForm.reset({
-      ...data,
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    })
-    // Hide success message after 3 seconds
-    setTimeout(() => setAccountUpdated(false), 3000)
+  // Update form when userSettings is loaded
+  useEffect(() => {
+    if (userSettings) {
+      accountForm.reset({
+        name: userSettings.name,
+        email: userSettings.email,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      })
+    }
+  }, [userSettings, accountForm])
+
+  // Form submission handler
+  const onSubmitAccountSettings = async (data: z.infer<typeof accountSettingsSchema>) => {
+    try {
+      setIsSubmitting(true)
+      
+      // Update user info
+      await updateSettings({
+        name: data.name,
+        email: data.email,
+      })
+      
+      // Update password if provided
+      if (data.newPassword) {
+        await updatePassword(data.currentPassword, data.newPassword)
+      }
+      
+      // Show success message
+      toast.success("Account settings updated successfully")
+      setAccountUpdated(true)
+      
+      // Reset password fields
+      accountForm.setValue("currentPassword", "")
+      accountForm.setValue("newPassword", "")
+      accountForm.setValue("confirmPassword", "")
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => setAccountUpdated(false), 3000)
+    } catch (err) {
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Failed to update account settings"
+      
+      toast.error(errorMessage)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-
-  // Format date helper
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric"
-    })
+  // Get initials for avatar
+  const getInitials = () => {
+    if (!userSettings?.name) return "AU"
+    
+    return userSettings.name
+      .split(" ")
+      .map(name => name[0])
+      .join("")
+      .toUpperCase()
   }
 
   return (
@@ -101,22 +141,36 @@ export default function AccountSettingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Account Settings</h1>
         </div>
 
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Information</CardTitle>
-                <CardDescription>
-                  Update your account details and password
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Information</CardTitle>
+            <CardDescription>
+              Update your account details and password
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+                Error loading settings: {error.message}
+              </div>
+            ) : (
+              <>
                 <div className="flex items-center gap-4 mb-6">
                   <Avatar className="h-20 w-20">
-                    <AvatarFallback>AU</AvatarFallback>
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-lg font-medium">Admin User</h3>
-                    <p className="text-sm text-gray-600">Administrator</p>
+                    <h3 className="text-lg font-medium">{userSettings?.name}</h3>
+                    <p className="text-sm text-gray-600">{userSettings?.role.toLocaleUpperCase() || "Administrator"}</p>
+                    {userSettings?.lastLogin && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Last login: {new Date(userSettings.lastLogin).toLocaleString()}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -261,8 +315,16 @@ export default function AccountSettingsPage() {
                     <Button 
                       type="submit" 
                       className="mt-4"
+                      disabled={isSubmitting}
                     >
-                      Save Account Settings
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Save Account Settings"
+                      )}
                     </Button>
                     
                     {accountUpdated && (
@@ -273,9 +335,10 @@ export default function AccountSettingsPage() {
                     )}
                   </form>
                 </Form>
-              </CardContent>
-            </Card>
-         
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   )
