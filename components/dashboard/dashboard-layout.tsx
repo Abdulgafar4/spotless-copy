@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navigation = [
     { name: "DASHBOARD", href: "/dashboard", icon: Home, current: pathname === "/dashboard" },
-    { name: "OVERVIEW", href: "/dashboard/overview", icon: FileText, current: pathname === "/dashboard/overview" },
+    { name: "OVERVIEW", href: "/dashboard", icon: FileText, current: pathname === "/dashboard" },
     { name: "MY PROFILE", href: "/dashboard/profile", icon: User, current: pathname === "/dashboard/profile" },
     {
       name: "BOOKING HISTORY",
@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const headerHref = currentPage?.href || pathname;
 
   const breadcrumbs = [
-    { label: "ADMIN", href: "/admin" },
+    { label: "HOME", href: "/dashboard" },
     { label: title.toUpperCase(), href: headerHref, current: true },
   ];
 

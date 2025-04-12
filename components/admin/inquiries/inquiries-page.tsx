@@ -7,13 +7,10 @@ import {
   Filter,
   Mail,
   Phone,
-  User,
-  Calendar,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
   Check,
-  X,
   Clock,
   Eye,
   MessageCircle,
@@ -89,7 +86,7 @@ export default function InquiriesPage() {
   // Filter inquiries based on search term and current tab
   const filteredInquiries = inquiries.filter(inquiry => {
     const matchesSearch = 
-      inquiry.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inquiry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inquiry.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inquiry.subject.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -154,6 +151,7 @@ export default function InquiriesPage() {
     setIsConfirmDialogOpen(true);
   }
   
+
   // Handle confirmation actions
   const handleConfirmAction = async () => {
     try {
@@ -358,11 +356,11 @@ export default function InquiriesPage() {
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback>
-                                {inquiry.full_name.split(' ').map(name => name[0]).join('')}
+                                {inquiry.name.split(' ').map(name => name[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{inquiry.full_name}</div>
+                              <div className="font-medium">{inquiry.name}</div>
                               <div className="text-xs text-gray-500 flex items-center gap-1">
                                 <Mail className="h-3 w-3" /> {inquiry.email}
                               </div>

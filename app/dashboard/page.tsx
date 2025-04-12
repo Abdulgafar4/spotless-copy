@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Clock, CalendarClock, MapPin, Building } from "lucide-react";
-import PageHeader from "@/components/page-header";
 import DashboardLayout from "@/components/dashboard/dashboard-layout";
 import { usePathname } from "next/navigation";
 import { z } from "zod";

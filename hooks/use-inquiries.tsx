@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 interface Inquiry {
   id: string;
-  full_name: string;
+  name: string;
   email: string;
   phone: string;
   subject: string;
@@ -27,6 +27,7 @@ interface InquiryFilters {
   status?: string;
   assignedTo?: string;
   dateRange?: { start: string; end: string };
+  searchTerm?: string;
 }
 
 interface UseAdminInquiriesReturn {
@@ -49,6 +50,46 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
   const [error, setError] = useState<Error | null>(null);
   const { user, isAdmin } = useAuth();
 
+  // Helper function to load responses for an inquiry
+  const loadResponsesForInquiry = async (inquiryId: string): Promise<InquiryResponse[]> => {
+    const { data, error } = await supabase
+      .from("inquiry_responses")
+      .select("*")
+      .eq("inquiry_id", inquiryId)
+      .order("created_at", { ascending: true });
+      
+    if (error) {
+      console.error("Error loading responses:", error);
+      return [];
+    }
+    
+    return data.map(res => ({
+      id: res.id,
+      inquiry_id: res.inquiry_id,
+      staff: res.staff,
+      message: res.message,
+      date: res.created_at
+    }));
+  };
+  
+  // Helper function to get staff name from ID
+  const getStaffNameFromId = async (staffId: string | null): Promise<string | null> => {
+    if (!staffId) return null;
+    
+    const { data, error } = await supabase
+      .from("employees")
+      .select("first_name, last_name")
+      .eq("id", staffId)
+      .single();
+      
+    if (error) {
+      console.error("Error loading staff:", error);
+      return null;
+    }
+    
+    return `${data.first_name} ${data.last_name}`;
+  };
+
   // Fetch all inquiries with optional filters
   const fetchInquiries = useCallback(
     async (filters: InquiryFilters = {}) => {
@@ -61,13 +102,10 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
       try {
         setLoading(true);
 
-        // Start building the query
+        // Start building the query for contact_messages only
         let query = supabase
           .from("contact_messages")
-          .select(`
-            *,
-            responses:inquiry_responses(*)
-          `)
+          .select("*")
           .order("created_at", { ascending: false });
 
         // Apply filters
@@ -88,6 +126,11 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
             .gte("created_at", filters.dateRange.start)
             .lte("created_at", filters.dateRange.end);
         }
+        
+        if (filters.searchTerm) {
+          const searchTerm = `%${filters.searchTerm}%`;
+          query = query.or(`name.ilike.${searchTerm},email.ilike.${searchTerm},subject.ilike.${searchTerm},message.ilike.${searchTerm}`);
+        }
 
         const { data, error: supabaseError } = await query;
 
@@ -95,21 +138,31 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
           throw supabaseError;
         }
 
-        // Transform the data to match our Inquiry interface
-        const transformedData = data?.map(item => ({
-          id: item.id,
-          full_name: item.full_name,
-          email: item.email,
-          phone: item.phone || '',
-          subject: item.subject,
-          message: item.message,
-          date: item.created_at,
-          status: item.status || 'new',
-          assignedTo: item.assigned_to,
-          responses: item.responses || []
-        })) || [];
+        // For each inquiry, load responses and staff name
+        const inquiriesWithDetails = await Promise.all(
+          (data || []).map(async (item) => {
+            // Get responses for this inquiry
+            const responses = await loadResponsesForInquiry(item.id);
+            
+            // Get assigned staff name
+            const assignedTo = await getStaffNameFromId(item.assigned_to);
+            
+            return {
+              id: item.id,
+              name: item.name,
+              email: item.email,
+              phone: item.phone || '',
+              subject: item.subject,
+              message: item.message,
+              date: item.created_at,
+              status: item.status || 'new',
+              assignedTo,
+              responses
+            };
+          })
+        );
 
-        setInquiries(transformedData);
+        setInquiries(inquiriesWithDetails);
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("An unknown error occurred")
@@ -132,10 +185,35 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
       try {
         setLoading(true);
 
+        // Need to find the employee ID if assignedTo contains a name
+        let assignedToId = null;
+        if (inquiryData.assignedTo && inquiryData.assignedTo !== "Unassigned") {
+          // Parse first and last name from the full name
+          const nameParts = inquiryData.assignedTo.split(' ');
+          if (nameParts.length >= 2) {
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ');
+            
+            // Query employees to find the matching ID
+            const { data: employeeData, error: employeeError } = await supabase
+              .from("employees")
+              .select("id")
+              .eq("first_name", firstName)
+              .eq("last_name", lastName)
+              .single();
+            
+            if (employeeError) {
+              console.error("Error finding employee:", employeeError);
+            } else if (employeeData) {
+              assignedToId = employeeData.id;
+            }
+          }
+        }
+
         // Transform the data to match database schema
         const dbData = {
           ...(inquiryData.status && { status: inquiryData.status }),
-          ...(inquiryData.assignedTo !== undefined && { assigned_to: inquiryData.assignedTo }),
+          ...(inquiryData.hasOwnProperty('assignedTo') && { assigned_to: assignedToId }),
           updated_at: new Date()
         };
 
@@ -144,37 +222,42 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
           .from("contact_messages")
           .update(dbData)
           .eq("id", id)
-          .select(`
-            *,
-            responses:inquiry_responses(*)
-          `);
+          .select();
 
         if (supabaseError) {
           throw supabaseError;
         }
 
-        // Transform the response to match our Inquiry interface
-        const transformedData = {
+        if (!data || data.length === 0) {
+          throw new Error("Inquiry not found");
+        }
+
+        // Get responses and staff name 
+        const responses = await loadResponsesForInquiry(id);
+        const assignedTo = await getStaffNameFromId(data[0].assigned_to);
+
+        // Build the updated inquiry object
+        const updatedInquiry = {
           id: data[0].id,
-          full_name: data[0].full_name,
+          name: data[0].name,
           email: data[0].email,
           phone: data[0].phone || '',
           subject: data[0].subject,
           message: data[0].message,
           date: data[0].created_at,
           status: data[0].status || 'new',
-          assignedTo: data[0].assigned_to,
-          responses: data[0].responses || []
+          assignedTo,
+          responses
         };
 
         // Update local state
         setInquiries(prevInquiries =>
           prevInquiries.map(inquiry =>
-            inquiry.id === id ? transformedData : inquiry
+            inquiry.id === id ? updatedInquiry : inquiry
           )
         );
 
-        return transformedData;
+        return updatedInquiry;
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("An unknown error occurred")
@@ -275,12 +358,11 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
 
       try {
         setLoading(true);
+        
+        // Get the inquiry details
         const { data, error: supabaseError } = await supabase
           .from("contact_messages")
-          .select(`
-            *,
-            responses:inquiry_responses(*)
-          `)
+          .select("*")
           .eq("id", id)
           .single();
 
@@ -288,18 +370,22 @@ export const useAdminInquiries = (): UseAdminInquiriesReturn => {
           throw supabaseError;
         }
 
-        // Transform the data to match our Inquiry interface
+        // Get responses and staff name
+        const responses = await loadResponsesForInquiry(id);
+        const assignedTo = await getStaffNameFromId(data.assigned_to);
+
+        // Build the complete inquiry object
         return {
           id: data.id,
-          full_name: data.full_name,
+          name: data.name,
           email: data.email,
           phone: data.phone || '',
           subject: data.subject,
           message: data.message,
           date: data.created_at,
           status: data.status || 'new',
-          assignedTo: data.assigned_to,
-          responses: data.responses || []
+          assignedTo,
+          responses
         };
       } catch (err) {
         setError(
