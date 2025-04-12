@@ -8,13 +8,11 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Form,
   FormControl,
@@ -28,26 +26,9 @@ import { Separator } from "@/components/ui/separator"
 import { 
   Eye, 
   EyeOff, 
-  Check, 
-  UserPlus,
-  Badge
+  Check,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import AdminLayout from "@/components/admin/admin-layout"
 
 // Define the form schemas
@@ -67,42 +48,6 @@ const accountSettingsSchema = z.object({
   path: ["confirmPassword"],
 });
 
-
-// Mock admin users data
-const mockAdminUsers = [
-  {
-    id: 1,
-    name: "John Admin",
-    email: "john.admin@example.com",
-    role: "Administrator",
-    lastActive: "2025-04-06T15:30:00",
-    status: "active"
-  },
-  {
-    id: 2,
-    name: "Sarah Manager",
-    email: "sarah.manager@example.com",
-    role: "Manager",
-    lastActive: "2025-04-05T12:15:00",
-    status: "active"
-  },
-  {
-    id: 3,
-    name: "Mike Supervisor",
-    email: "mike.supervisor@example.com",
-    role: "Supervisor",
-    lastActive: "2025-04-04T09:45:00",
-    status: "inactive"
-  },
-  {
-    id: 4,
-    name: "Emily Staff",
-    email: "emily.staff@example.com",
-    role: "Staff",
-    lastActive: "2025-04-07T10:20:00",
-    status: "active"
-  }
-];
 
 export default function AccountSettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -156,13 +101,7 @@ export default function AccountSettingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Account Settings</h1>
         </div>
 
-        <Tabs defaultValue="account" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="account">Your Account</TabsTrigger>
-            <TabsTrigger value="team">Team Management</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="account" className="space-y-4">
+
             <Card>
               <CardHeader>
                 <CardTitle>Account Information</CardTitle>
@@ -336,112 +275,7 @@ export default function AccountSettingsPage() {
                 </Form>
               </CardContent>
             </Card>
-          </TabsContent>
-          
-          
-          <TabsContent value="team" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Team Members</CardTitle>
-                    <CardDescription>
-                      Manage user accounts and permissions
-                    </CardDescription>
-                  </div>
-                  <Button>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Add User
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Last Active</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockAdminUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback>
-                                {user.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium">{user.name}</div>
-                              <div className="text-xs text-gray-500">{user.email}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={
-                            user.role === "Administrator" ? "bg-purple-100 text-purple-800" :
-                            user.role === "Manager" ? "bg-blue-100 text-blue-800" :
-                            user.role === "Supervisor" ? "bg-orange-100 text-orange-800" :
-                            "bg-gray-100 text-gray-800"
-                          }>
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(user.lastActive)}</TableCell>
-                        <TableCell>
-                          <Badge className={user.status === "active" 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-gray-100 text-gray-800"
-                          }>
-                            {user.status === "active" ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                Actions
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>Edit User</DropdownMenuItem>
-                              <DropdownMenuItem>Change Role</DropdownMenuItem>
-                              <DropdownMenuItem>Reset Password</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className={user.status === "active" ? "text-red-600" : "text-green-600"}>
-                                {user.status === "active" ? "Deactivate User" : "Activate User"}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-              <CardFooter className="border-t px-6 py-4">
-                <div className="flex items-center justify-between w-full">
-                  <p className="text-sm text-gray-500">
-                    Showing <span className="font-medium">4</span> of <span className="font-medium">4</span> team members
-                  </p>
-                  <div className="space-x-2">
-                    <Button variant="outline" size="sm" disabled>
-                      Previous
-                    </Button>
-                    <Button variant="outline" size="sm" disabled>
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-        </Tabs>
+         
       </div>
     </AdminLayout>
   )
