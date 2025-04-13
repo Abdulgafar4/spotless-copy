@@ -27,6 +27,7 @@ import { BookingOverviewCards } from "./booking-overview"
 import { BookingFilters } from "./booking-filter"
 import { BookingsTable } from "./booking-table"
 import { useAdminBookings } from "@/hooks/use-booking"
+import { toast } from "sonner"
 
 
 export default function BookingsPage() {
@@ -191,6 +192,12 @@ export default function BookingsPage() {
       // For now, we'll assume staffList contains IDs
       await assignStaffToBooking(selectedBooking.id, staffList);
       setIsAssignDialogOpen(false);
+
+      // Add toast notification for feedback
+      toast.success("Staff successfully assigned to booking");
+
+      // Reload the page after successful assignment
+      window.location.reload();
     } catch (error) {
       console.error("Failed to assign staff:", error);
     }
@@ -199,6 +206,8 @@ export default function BookingsPage() {
   const handleMessageCustomer = (booking: Booking) => {
     setSelectedBooking(booking)
     setIsMessageDialogOpen(true)
+
+
   }
 
   const handleSendMessage = (message: string) => {
@@ -357,7 +366,7 @@ export default function BookingsPage() {
         isOpen={isDetailsDialogOpen}
         setIsOpen={setIsDetailsDialogOpen}
         booking={selectedBooking}
-        onAssignStaff={handleAssignStaff}
+        onAssignStaff={handleAssignStaffSubmit}
         onUpdateStatus={handleUpdateStatus}
         onMessageCustomer={handleMessageCustomer}
       />

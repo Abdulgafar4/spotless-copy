@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { PaymentHistory } from "@/components/dashboard/payments/payment-hisotry";
 import { PendingPayments } from "@/components/dashboard/payments/pending-payments";
 import { PaymentMethods } from "@/components/dashboard/payments/payments-methods";
+import DashboardLayout from "@/components/dashboard/dashboard-layout";
 
 interface PaymentMethod {
   id: string;
@@ -283,6 +284,7 @@ export default function PaymentsPage() {
   };
 
   return (
+    <DashboardLayout>
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Payments</h2>
@@ -327,5 +329,6 @@ export default function PaymentsPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </DashboardLayout>
   );
 }

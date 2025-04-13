@@ -22,7 +22,6 @@ export default function ReportsPage() {
     loading,
     error,
     getRevenueData,
-    getBranchPerformance,
     getServiceDistribution,
     getMetricSummary
   } = useReports();

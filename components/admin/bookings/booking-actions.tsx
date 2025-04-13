@@ -43,12 +43,6 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
           icon: CalendarX, 
           color: "text-red-500", 
           action: () => onUpdateStatus(booking, "cancelled") 
-        },
-        { 
-          label: "Mark In Progress", 
-          icon: Clock, 
-          color: "text-blue-500", 
-          action: () => onUpdateStatus(booking, "in-progress") 
         }
       ],
       "in-progress": [

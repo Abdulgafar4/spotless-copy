@@ -11,7 +11,8 @@ export function middleware(request: NextRequest) {
     path === "/signup" ||
     path === "/" ||
     path === "/about-us" ||
-    path === "/faq"
+    path === "/faq" ||
+    path === "/booking"
 
   // Check if user is authenticated by looking for the auth token
   const token = request.cookies.get("auth-token")?.value

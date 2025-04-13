@@ -21,6 +21,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Search, User, X } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useAdminBranches } from "@/hooks/use-branch"
+import { useAdminServices } from "@/hooks/use-service"
+import { useAdminEmployees } from "@/hooks/use-employees"
+import { useAuth } from "@/hooks/use-auth"
 
 interface AssignStaffDialogProps {
   isOpen: boolean
@@ -29,22 +33,14 @@ interface AssignStaffDialogProps {
   onAssign: (staff: string[]) => void
 }
 
-// Mock staff members data
-const mockStaffMembers = [
-  { id: 1, name: "Emma Wilson", role: "Cleaner", branch: "Toronto Downtown", status: "available" },
-  { id: 2, name: "David Lee", role: "Cleaner", branch: "Toronto Downtown", status: "available" },
-  { id: 3, name: "Michael Brown", role: "Cleaner", branch: "Toronto Downtown", status: "busy" },
-  { id: 4, name: "Jessica Clark", role: "Cleaner", branch: "Toronto Downtown", status: "available" },
-  { id: 5, name: "Kevin Wilson", role: "Cleaner", branch: "North York", status: "available" },
-  { id: 6, name: "Laura Taylor", role: "Cleaner", branch: "North York", status: "available" },
-  { id: 7, name: "Mark Anderson", role: "Cleaner", branch: "North York", status: "busy" },
-  { id: 8, name: "Susan White", role: "Cleaner", branch: "Mississauga", status: "available" },
-  { id: 9, name: "James Martin", role: "Cleaner", branch: "Toronto Downtown", status: "available" },
-  { id: 10, name: "Nicole Brown", role: "Cleaner", branch: "Toronto Downtown", status: "available" },
-  { id: 11, name: "Christopher White", role: "Cleaner", branch: "Mississauga", status: "available" },
-  { id: 12, name: "Elizabeth Davis", role: "Cleaner", branch: "Mississauga", status: "busy" },
-  { id: 13, name: "Jason Miller", role: "Cleaner", branch: "Mississauga", status: "available" },
-];
+interface StaffMember {
+  id: string
+  name: string
+  role: string
+  branch_id: string
+  status: string
+  email?: string
+}
 
 export function AssignStaffDialog({
   isOpen,
@@ -56,6 +52,50 @@ export function AssignStaffDialog({
   const [searchTerm, setSearchTerm] = useState("")
   const [branchFilter, setBranchFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
+  
+  const { branches } = useAdminBranches()
+  const { services } = useAdminServices()
+  const { 
+    employees, 
+    loading, 
+    fetchEmployees 
+  } = useAdminEmployees()
+  const { loading: authLoading } = useAuth()
+  
+  // Fetch employees when the dialog opens
+  useEffect(() => {
+    if (isOpen && !authLoading) {
+      // Create filter object if branch filter is applied
+      const filters: EmployeeFilters = {};
+      if (branchFilter) {
+        filters.branch_id = branchFilter;
+      }
+      if (statusFilter) {
+        filters.status = statusFilter;
+      }
+      
+      fetchEmployees(filters);
+    }
+  }, [isOpen, authLoading, fetchEmployees, branchFilter, statusFilter])
+  
+  // Transform employees to staff members format
+  useEffect(() => {
+    if (employees && employees.length > 0) {
+      const formattedStaff = employees.map((employee) => ({
+        id: employee.id,
+        name: `${employee.first_name} ${employee.last_name}`,
+        role: employee.role || "Staff",
+        branch_id: employee.branch_id,
+        status: employee.status || "available",
+        email: employee.email
+      }));
+      
+      setStaffMembers(formattedStaff);
+    } else {
+      setStaffMembers([]);
+    }
+  }, [employees])
   
   // Initialize selected staff when the dialog opens
   useEffect(() => {
@@ -66,13 +106,19 @@ export function AssignStaffDialog({
     }
   }, [booking, isOpen])
   
-  // Filter staff members
-  const filteredStaff = mockStaffMembers.filter(staff => {
-    const matchesSearch = staff.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesBranch = branchFilter === "" || staff.branch === branchFilter;
-    const matchesStatus = statusFilter === "" || staff.status === statusFilter;
+  // Get branch name by id
+  const getBranchName = (branchId: string) => {
+    const branch = branches.find(b => b.id === branchId)
+    return branch ? branch.name : "Unknown Branch"
+  }
+  
+  // Filter staff members by search term only (branch and status filtering is handled by the fetchEmployees call)
+  const filteredStaff = staffMembers.filter(staff => {
+    const matchesSearch = !searchTerm || 
+                          staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (staff.email && staff.email.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return matchesSearch && matchesBranch && matchesStatus;
+    return matchesSearch;
   });
   
   // Handle staff selection
@@ -87,10 +133,8 @@ export function AssignStaffDialog({
   // Handle form submission
   const handleSubmit = () => {
     onAssign(selectedStaff);
+    setIsOpen(false);
   };
-  
-  // Get unique branches for filter dropdown
-  const branches = Array.from(new Set(mockStaffMembers.map(staff => staff.branch)));
 
   if (!booking) return null;
 
@@ -120,14 +164,14 @@ export function AssignStaffDialog({
               <Select
                 value={branchFilter}
                 onValueChange={setBranchFilter}
+                disabled={loading || authLoading}
               >
                 <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="All Branches" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Branches</SelectItem>
                   {branches.map((branch) => (
-                    <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                    <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -135,6 +179,7 @@ export function AssignStaffDialog({
               <Select
                 value={statusFilter}
                 onValueChange={setStatusFilter}
+                disabled={loading || authLoading}
               >
                 <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="All Status" />
@@ -171,43 +216,51 @@ export function AssignStaffDialog({
           )}
           
           <div className="border rounded-md overflow-hidden">
-            <div className="max-h-[300px] overflow-y-auto">
-              {filteredStaff.length > 0 ? (
-                <div className="divide-y">
-                  {filteredStaff.map((staff) => (
-                    <div 
-                      key={staff.id} 
-                      className="flex items-center justify-between p-3 hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {staff.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{staff.name}</div>
-                          <div className="text-xs text-gray-500">{staff.role} • {staff.branch}</div>
+            {loading || authLoading ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="animate-pulse">Loading staff members...</div>
+              </div>
+            ) : (
+              <div className="max-h-[300px] overflow-y-auto">
+                {filteredStaff.length > 0 ? (
+                  <div className="divide-y">
+                    {filteredStaff.map((staff) => (
+                      <div 
+                        key={staff.id} 
+                        className="flex items-center justify-between p-3 hover:bg-gray-50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              {staff.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{staff.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {staff.role} • {getBranchName(staff.branch_id)}
+                            </div>
+                          </div>
                         </div>
+                        <Checkbox 
+                          checked={selectedStaff.includes(staff.name)}
+                          onCheckedChange={() => toggleStaffSelection(staff.name)}
+                          disabled={staff.status === "busy" && !selectedStaff.includes(staff.name)}
+                        />
                       </div>
-                      <Checkbox 
-                        checked={selectedStaff.includes(staff.name)}
-                        onCheckedChange={() => toggleStaffSelection(staff.name)}
-                        disabled={staff.status === "busy" && !selectedStaff.includes(staff.name)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-6 text-center text-gray-500">
-                  <User className="h-10 w-10 mx-auto mb-2" />
-                  <h3 className="text-lg font-medium">No staff found</h3>
-                  <p className="text-sm">
-                    Try adjusting your search or filters
-                  </p>
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-500">
+                    <User className="h-10 w-10 mx-auto mb-2" />
+                    <h3 className="text-lg font-medium">No staff found</h3>
+                    <p className="text-sm">
+                      Try adjusting your search or filters
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
         
@@ -215,7 +268,7 @@ export function AssignStaffDialog({
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={selectedStaff.length === 0}>
+          <Button onClick={handleSubmit} disabled={selectedStaff.length === 0 || loading || authLoading}>
             Assign Staff
           </Button>
         </DialogFooter>

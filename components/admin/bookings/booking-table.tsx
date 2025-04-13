@@ -25,7 +25,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
         <TableHeader>
           <TableRow>
             {[ "Customer", "Service", "Date & Time", 
-              "Status", "Staff", "Amount", "Actions"
+              "Status", "Staff", "Actions"
             ].map(header => (
               <TableHead key={header} className="px-6 py-4 whitespace-nowrap"> 
                 {header === "Actions" ? <span className="text-right">{header}</span> : header}

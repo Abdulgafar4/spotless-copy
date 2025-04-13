@@ -11,33 +11,56 @@ export const AuthProvider = ({ children }: any) => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
-  const pathname = usePathname();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const currentUser = data.session?.user || null;
-      setUser(currentUser);
-
-      // Check if user is admin based on user metadata
-      if (currentUser) {
-        checkAdminStatus(currentUser);
+  // Helper function to check admin status
+  const checkAdminStatus = async (currentUser: any) => {
+    try {
+      // Default to false if no user
+      if (!currentUser) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      // Check user metadata if it contains role information
+      if (currentUser?.user_metadata?.user_role === "admin") {
+        setIsAdmin(true);
       } else {
         setIsAdmin(false);
       }
-      setLoading(false);
-    });
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+      setIsAdmin(false);
+    }
+  };
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const currentUser = data.session?.user || null;
+        setUser(currentUser);
+        
+        // Wait for admin status check to complete
+        await checkAdminStatus(currentUser);
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        setUser(null);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
+        setLoading(true);
         const currentUser = session?.user || null;
         setUser(currentUser);
-
-        // Check if user is admin when auth state changes
-        if (currentUser) {
-          checkAdminStatus(currentUser);
-        } else {
-          setIsAdmin(false);
-        }
+        
+        // Wait for admin status check to complete
+        await checkAdminStatus(currentUser);
         setLoading(false);
       }
     );
@@ -46,19 +69,6 @@ export const AuthProvider = ({ children }: any) => {
       listener?.subscription.unsubscribe();
     };
   }, []);
-
-  // Helper function to check admin status
-  const checkAdminStatus = async (user: any) => {
-    try {
-      // Option 1: Check user metadata if it contains role information
-      if (user?.user_metadata?.user_role === "admin") {
-        setIsAdmin(true);
-      }
-    } catch (error) {
-      console.error("Error checking admin status:", error);
-      setIsAdmin(false);
-    }
-  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -77,7 +87,7 @@ export const AuthProvider = ({ children }: any) => {
       const user = authData.user;
     
       if (session && user) {
-        const role = user?.user_metadata.user_role || "client";
+        const role = user?.user_metadata?.user_role || "client";
     
         // Set cookies
         document.cookie = `auth-token=${session.access_token}; path=/; max-age=86400`;

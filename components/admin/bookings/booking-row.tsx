@@ -46,7 +46,6 @@ export const BookingRow: React.FC<BookingRowProps> = ({
         </Avatar>
         <div>
           <div className="font-medium">{booking.customerName}</div>
-          <div className="text-xs text-gray-500">{booking.customerPhone}</div>
         </div>
       </div>
     </TableCell>
@@ -72,7 +71,6 @@ export const BookingRow: React.FC<BookingRowProps> = ({
         <div className="text-sm text-gray-500">Not assigned</div>
       )}
     </TableCell>
-    <TableCell className="font-medium">${booking.amount.toFixed(2)}</TableCell>
     <TableCell>
       <div className="flex justify-end items-center gap-2">
         <Button

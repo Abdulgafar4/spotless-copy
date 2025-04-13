@@ -38,12 +38,12 @@ export const getAdminNavigation = (pathname?: string) => [
       icon: NotebookText,
       current: pathname === "/admin/bookings",
     },
-    {
-      name: "Customers",
-      href: "/admin/customers",
-      icon: Users,
-      current: pathname === "/admin/customers",
-    },
+    // {
+    //   name: "Customers",
+    //   href: "/admin/customers",
+    //   icon: Users,
+    //   current: pathname === "/admin/customers",
+    // },
     {
       name: "Inquiries",
       href: "/admin/inquiries",

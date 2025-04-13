@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   User,
@@ -48,9 +47,8 @@ export function BookingDetailsDialog({
 }: BookingDetailsDialogProps) {
   if (!booking) return null
 
-
   const formatDate = (dateString: string) => format(new Date(dateString), "MMM d, yyyy")
-const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a")
+  const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a")
 
   // Helper for status badge
   const getStatusBadge = (status: string) => {
@@ -58,7 +56,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
       case "pending":
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
       case "confirmed":
-        return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>
+        return <Badge className="bg-green-100 text-green-800">Confirmed</Badge>
       case "in-progress":
         return <Badge className="bg-purple-100 text-purple-800">In Progress</Badge>
       case "completed":
@@ -72,27 +70,24 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
     }
   }
 
-  console.log(booking)
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95%] max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-10">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+          <DialogTitle className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>Booking Details - {booking.id}</span>
             {getStatusBadge(booking.status)}
           </DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="details" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="details" className="mt-4 sm:mt-6">
+          <TabsList className="grid grid-cols-2 w-full max-w-[400px] mx-auto">
             <TabsTrigger value="details">Booking Details</TabsTrigger>
-            <TabsTrigger value="customer">Customer Info</TabsTrigger>
             <TabsTrigger value="staff">Staff & Notes</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="mt-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <TabsContent value="details" className="mt-4 sm:mt-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Service Type</h3>
                 <p className="text-base flex items-center gap-2">
@@ -116,23 +111,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
                   {booking.date}
                 </p>
               </div>
-              
-              <div className="space-y-2 p-4 border rounded-md">
-                <h3 className="text-sm font-medium text-gray-500">Time & Duration</h3>
-                <p className="text-base flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  {booking.date} 
-                  {/* ({booking.duration}) */}
-                </p>
-              </div>
-              
-              <div className="space-y-2 p-4 border rounded-md">
-                <h3 className="text-sm font-medium text-gray-500">Amount</h3>
-                <p className="text-base flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-gray-400" />
-                  ${booking.amount.toFixed(2)}
-                </p>
-              </div>
+ 
               
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Created On</h3>
@@ -150,6 +129,48 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
                 <span>{booking.address}</span>
               </p>
             </div>
+
+            <div className="space-y-2 p-4 border rounded-md bg-gray-50">
+              <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="bg-green-100 text-green-600 text-xl font-bold">
+                    {booking.customerName.split(' ').map((name: string) => name[0]).join('').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="text-center sm:text-left">
+                  <h3 className="text-lg font-semibold text-gray-800">{booking.customerName}</h3>
+                  <div className="space-y-1 mt-1">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4 text-green-500" />
+                      <a 
+                        href={`mailto:${booking.customerEmail}`} 
+                        className="text-green-600 hover:underline"
+                      >
+                        {booking.customerEmail}
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-gray-600">
+                      <Phone className="h-4 w-4 text-green-500" />
+                      <a 
+                        href={`tel:${booking.customerPhone}`} 
+                        className="text-gray-700 hover:underline"
+                      >
+                        {booking.customerPhone}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => onMessageCustomer(booking)}
+                className="w-full mt-2 bg-green-500 hover:bg-green-600 transition-colors"
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Send Message to Customer
+              </Button>
+            </div>
             
             {booking.status === "cancelled" && booking.cancellationReason && (
               <div className="space-y-2 p-4 border rounded-md border-red-200 bg-red-50">
@@ -158,11 +179,11 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
               </div>
             )}
             
-            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+            <div className="flex flex-col sm:flex-row gap-2 mt-4 justify-center">
               {booking.status === "pending" && (
                 <>
                   <Button 
-                    className="bg-green-500 hover:bg-green-600"
+                    className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
                     onClick={() => onUpdateStatus(booking, "confirmed")}
                   >
                     <CalendarCheck className="mr-2 h-4 w-4" />
@@ -170,6 +191,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
                   </Button>
                   <Button 
                     variant="destructive"
+                    className="w-full sm:w-auto"
                     onClick={() => onUpdateStatus(booking, "rejected")}
                   >
                     <CalendarX className="mr-2 h-4 w-4" />
@@ -181,14 +203,8 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
               {booking.status === "confirmed" && (
                 <>
                   <Button 
-                    className="bg-blue-500 hover:bg-blue-600"
-                    onClick={() => onUpdateStatus(booking, "in-progress")}
-                  >
-                    <Clock className="mr-2 h-4 w-4" />
-                    Mark In Progress
-                  </Button>
-                  <Button 
                     variant="destructive"
+                    className="w-full sm:w-auto"
                     onClick={() => onUpdateStatus(booking, "cancelled")}
                   >
                     <CalendarX className="mr-2 h-4 w-4" />
@@ -199,7 +215,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
               
               {booking.status === "in-progress" && (
                 <Button 
-                  className="bg-green-500 hover:bg-green-600"
+                  className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
                   onClick={() => onUpdateStatus(booking, "completed")}
                 >
                   <CalendarCheck className="mr-2 h-4 w-4" />
@@ -210,6 +226,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
               {(booking.status === "confirmed" || booking.status === "pending") && (
                 <Button 
                   variant="outline"
+                  className="w-full sm:w-auto"
                   onClick={() => onAssignStaff(booking)}
                 >
                   <User className="mr-2 h-4 w-4" />
@@ -219,44 +236,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
             </div>
           </TabsContent>
           
-          <TabsContent value="customer" className="mt-6 space-y-4">
-            <div className="flex items-start gap-4 mb-6">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback>
-                  {booking.customerName.split(' ').map((name: string) => name[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h3 className="text-lg font-medium">{booking.customerName}</h3>
-                <div className="flex flex-col space-y-1 mt-1">
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                    <Mail className="h-4 w-4" /> 
-                    <a href={`mailto:${booking.customerEmail}`} className="text-blue-600 hover:underline">
-                      {booking.customerEmail}
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                    <Phone className="h-4 w-4" /> 
-                    <a href={`tel:${booking.customerPhone}`} className="text-blue-600 hover:underline">
-                      {booking.customerPhone}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <Separator />
-            
-            <Button 
-              onClick={() => onMessageCustomer(booking)}
-              className="w-full"
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Send Message to Customer
-            </Button>
-          </TabsContent>
-          
-          <TabsContent value="staff" className="mt-6 space-y-4">
+          <TabsContent value="staff" className="mt-4 sm:mt-6 space-y-4">
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Assigned Staff</h3>
               {booking.assignedStaff && booking.assignedStaff.length > 0 ? (
@@ -275,7 +255,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
               {(booking.status === "confirmed" || booking.status === "pending") && (
                 <Button 
                   variant="outline" 
-                  className="mt-4"
+                  className="mt-4 w-full"
                   onClick={() => onAssignStaff(booking)}
                 >
                   <User className="mr-2 h-4 w-4" />
@@ -297,8 +277,8 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
           </TabsContent>
         </Tabs>
         
-        <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
+        <DialogFooter className="mt-4 sm:mt-6">
+          <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">
             Close
           </Button>
         </DialogFooter>
