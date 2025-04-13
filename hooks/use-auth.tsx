@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const AuthContext = createContext<any>(null);
@@ -33,15 +33,58 @@ export const AuthProvider = ({ children }: any) => {
     }
   };
 
+  // Add auto-login check function
+  const checkExistingSession = async () => {
+    try {
+      // Check if we have cookies
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('auth-token='));
+      
+      if (!tokenCookie) {
+        return false;
+      }
+      
+      // We have a token, validate it with Supabase
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error || !data.session) {
+        // Invalid or expired token, clear cookies
+        document.cookie = "auth-token=; path=/; max-age=0";
+        document.cookie = "role=; path=/; max-age=0";
+        return false;
+      }
+      
+      // Valid session exists, set user data
+      setUser(data.session.user);
+      await checkAdminStatus(data.session.user);
+      return true;
+    } catch (error) {
+      console.error("Error checking existing session:", error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // First try to get session from Supabase
         const { data } = await supabase.auth.getSession();
         const currentUser = data.session?.user || null;
-        setUser(currentUser);
         
-        // Wait for admin status check to complete
-        await checkAdminStatus(currentUser);
+        if (currentUser) {
+          // We have a session in Supabase
+          setUser(currentUser);
+          await checkAdminStatus(currentUser);
+        } else {
+          // No Supabase session, but check if we have cookies
+          const autoLoginSuccess = await checkExistingSession();
+          
+          if (!autoLoginSuccess) {
+            // No valid session found
+            setUser(null);
+            setIsAdmin(false);
+          }
+        }
       } catch (error) {
         console.error("Error initializing auth:", error);
         setUser(null);
@@ -59,7 +102,18 @@ export const AuthProvider = ({ children }: any) => {
         const currentUser = session?.user || null;
         setUser(currentUser);
         
-        // Wait for admin status check to complete
+        // If we get a session change, update cookies accordingly
+        if (currentUser) {
+          const role = currentUser?.user_metadata?.user_role || "client";
+          // Session cookies (browser session only)
+          document.cookie = `auth-token=${session?.access_token || ""}; path=/`;
+          document.cookie = `role=${role}; path=/`;
+        } else {
+          // Clear cookies on signout
+          document.cookie = "auth-token=; path=/; max-age=0";
+          document.cookie = "role=; path=/; max-age=0";
+        }
+        
         await checkAdminStatus(currentUser);
         setLoading(false);
       }
@@ -89,9 +143,9 @@ export const AuthProvider = ({ children }: any) => {
       if (session && user) {
         const role = user?.user_metadata?.user_role || "client";
     
-        // Set cookies
-        document.cookie = `auth-token=${session.access_token}; path=/; max-age=86400`;
-        document.cookie = `role=${role}; path=/; max-age=86400`;
+        // Set session cookies (no expiry = browser session only)
+        document.cookie = `auth-token=${session.access_token}; path=/`;
+        document.cookie = `role=${role}; path=/`;
     
         // Redirect based on role
         if (role === "admin") {
