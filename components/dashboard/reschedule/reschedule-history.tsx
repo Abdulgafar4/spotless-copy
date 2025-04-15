@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { formatShortDate, formatTime } from "@/lib/utils";
 
 interface Appointment {
   id: string;
@@ -52,8 +53,8 @@ interface RescheduleHistoryProps {
 }
 
 export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
-  const [selectedRequest, setSelectedRequest] = useState<RescheduleRequest | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  // const [selectedRequest, setSelectedRequest] = useState<RescheduleRequest | null>(null);
+  // const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const statusConfig = {
     approved: {
@@ -73,14 +74,6 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
     },
   };
 
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
 
   const formatDateTime = (dateTimeString: string) => {
     const options: Intl.DateTimeFormatOptions = { 
@@ -105,10 +98,10 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
     return timeString; // Already in display format
   };
 
-  const handleViewDetails = (request: RescheduleRequest) => {
-    setSelectedRequest(request);
-    setIsDetailsOpen(true);
-  };
+  // const handleViewDetails = (request: RescheduleRequest) => {
+  //   setSelectedRequest(request);
+  //   setIsDetailsOpen(true);
+  // };
 
     if (requests.length === 0) {
       return (
@@ -166,17 +159,17 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Original Date</h4>
-                          <p>{formatDate(appointment.date)}</p>
+                          <p>{formatShortDate(appointment.date)}</p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Original Time</h4>
-                          <p>{appointment.time}</p>
+                          <p>{formatTime(appointment.date)}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Requested Date</h4>
-                          <p>{formatDate(request.requested_date)}</p>
+                          <p>{formatShortDate(request.requested_date)}</p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Requested Time</h4>
@@ -187,7 +180,7 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
                         <h4 className="text-sm font-medium text-gray-500">Reason</h4>
                         <p className="text-sm">{request.reason}</p>
                       </div>
-                      <Button 
+                      {/* <Button 
                         variant="outline" 
                         size="sm" 
                         className="mt-2"
@@ -195,7 +188,7 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
                       >
                         <FileText className="h-4 w-4 mr-1" />
                         View Full Details
-                      </Button>
+                      </Button> */}
                     </div>
                   ) : (
                     <div className="p-4 bg-gray-50 rounded-md text-center">
@@ -210,7 +203,7 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
         })}
       </div>
 
-      {selectedRequest && selectedRequest.appointment && (
+      {/* {selectedRequest && selectedRequest.appointment && (
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
@@ -229,7 +222,7 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
                 <div className="mt-2 p-3 bg-gray-50 rounded-md space-y-2">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>{formatDate(selectedRequest.appointment.date)} at {selectedRequest.appointment.time}</span>
+                    <span>{formatShortDate(selectedRequest.appointment.date)} at {selectedRequest.appointment.time}</span>
                   </div>
                   <div>
                     <span className="block font-medium">{selectedRequest.appointment.service_type}</span>
@@ -246,7 +239,7 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
                 <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-100 space-y-2">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium">{formatDate(selectedRequest.requested_date)}</span>
+                    <span className="font-medium">{formatShortDate(selectedRequest.requested_date)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-blue-500" />
@@ -304,6 +297,6 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
+      )} */}
     </>
   )};

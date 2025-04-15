@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, Building, CreditCard, ArrowRight } from "lucide-react";
 import { Booking } from "@/hooks/use-client-bookings";
 import { useRouter } from "next/navigation";
+import { formatLongDate, formatTime } from "@/lib/utils";
 
 interface BookingDetailsDialogProps {
   booking: Booking | null;
@@ -71,16 +72,6 @@ export function BookingDetailsDialog({
       label: "Unpaid",
     },
   };
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
   
   const formatCurrency = (amount: number | undefined) => {
     if (amount === undefined) return "N/A";
@@ -112,11 +103,11 @@ export function BookingDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[650px]">
+      <DialogContent className="sm:max-w-[850px]">
         <DialogHeader>
           <DialogTitle className="text-xl">Booking Details</DialogTitle>
           <DialogDescription className="flex justify-between items-center">
-            <span>Booking #{booking.id}</span>
+            <span>Booking #{booking.reference_number}</span>
             <Badge className={statusDisplay.className}>
               {statusDisplay.label}
             </Badge>
@@ -129,17 +120,17 @@ export function BookingDetailsDialog({
               <h4 className="text-sm font-medium text-gray-500 mb-2">Service Information</h4>
               <div className="p-3 bg-gray-50 rounded-md space-y-2">
                 <h4 className="font-medium">{booking.service_type}</h4>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                {/* <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Building className="h-4 w-4 text-gray-500" />
                   <span>{booking.branch}</span>
-                </div>
+                </div> */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span>{formatDate(booking.date)}</span>
+                  <span>{formatLongDate(booking.date)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Clock className="h-4 w-4 text-gray-500" />
-                  <span>{booking.time}</span>
+                  <span>{formatTime(booking.date)}</span>
                 </div>
                 {booking.address && (
                   <div className="flex items-start gap-2 text-sm text-gray-600">

@@ -27,6 +27,7 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import { formatLongDate, formatTime } from "@/lib/utils";
 
 interface Appointment {
   id: string;
@@ -86,16 +87,6 @@ export function CancellationRequestForm({ appointments, onSubmit }: Cancellation
     setSelectedAppointment(selected);
   };
 
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -120,7 +111,7 @@ export function CancellationRequestForm({ appointments, onSubmit }: Cancellation
                 <SelectContent>
                   {appointments.map((appointment) => (
                     <SelectItem key={appointment.id} value={appointment.id}>
-                      {appointment.service_type} - {formatDate(appointment.date)} at {appointment.time}
+                      {appointment.service_type} - {formatLongDate(appointment.date)} at {formatTime(appointment.date)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -131,25 +122,21 @@ export function CancellationRequestForm({ appointments, onSubmit }: Cancellation
         />
 
         {selectedAppointment && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-green-200 bg-green-50">
             <CardContent className="p-4">
               <h3 className="font-medium mb-3">Appointment Details</h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <CalendarIcon className="h-4 w-4 text-blue-500" />
-                  <span>{formatDate(selectedAppointment.date)}</span>
+                  <CalendarIcon className="h-4 w-4 text-green-500" />
+                  <span>{formatLongDate(selectedAppointment.date)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-blue-500" />
-                  <span>{selectedAppointment.time}</span>
+                  <Clock className="h-4 w-4 text-green-500" />
+                  <span>{formatTime(selectedAppointment.date)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-blue-500" />
+                  <MapPin className="h-4 w-4 text-green-500" />
                   <span>{selectedAppointment.address}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Building className="h-4 w-4 text-blue-500" />
-                  <span>{selectedAppointment.branch}</span>
                 </div>
               </div>
             </CardContent>

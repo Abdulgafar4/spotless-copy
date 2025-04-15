@@ -71,10 +71,9 @@ export const useClientReviews = (): UseClientReviewsReturn => {
       
       // Fetch completed appointments that can be reviewed
       const { data: appointmentsData, error: appointmentsError } = await supabase
-        .from("appointments")
+        .from("bookings")
         .select(`
-          *,
-          staff_assigned(*)
+          *
         `)
         .eq("user_id", user.id)
         .eq("status", "completed");

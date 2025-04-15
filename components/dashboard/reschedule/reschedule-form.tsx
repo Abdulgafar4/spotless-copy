@@ -1,10 +1,6 @@
-"use client";
-
-import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Clock, MapPin, Building } from "lucide-react";
+import React, { useState } from "react";
+import { format } from "date-fns";
+import { Calendar, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -27,14 +23,11 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatLongDate, formatTime } from "@/lib/utils";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Appointment {
   id: string;
@@ -81,6 +74,130 @@ const rescheduleFormSchema = z.object({
 
 type RescheduleFormValues = z.infer<typeof rescheduleFormSchema>;
 
+const DatePicker = ({ selected, onSelect, minDate }: any) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  const daysInMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth() + 1,
+    0
+  ).getDate();
+  
+  const firstDayOfMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth(),
+    1
+  ).getDay();
+  
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+  
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+  
+  const isToday = (day: any) => {
+    const today = new Date();
+    return (
+      day === today.getDate() &&
+      currentMonth.getMonth() === today.getMonth() &&
+      currentMonth.getFullYear() === today.getFullYear()
+    );
+  };
+  
+  const isSelected = (day: any) => {
+    if (!selected) return false;
+    return (
+      day === selected.getDate() &&
+      currentMonth.getMonth() === selected.getMonth() &&
+      currentMonth.getFullYear() === selected.getFullYear()
+    );
+  };
+  
+  const isDisabled = (day: any) => {
+    if (!minDate) return false;
+    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    return date < minDate;
+  };
+  
+  const handleDateClick = (day: any) => {
+    if (isDisabled(day)) return;
+    const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    onSelect(newDate);
+  };
+  
+  const monthName = format(currentMonth, "MMMM yyyy");
+  
+  const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  
+  const generateCalendarDays = () => {
+    const days = [];
+    
+    // Empty cells for days before the first day of the month
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(<div key={`empty-${i}`} className="h-8 w-8"></div>);
+    }
+    
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(
+        <button
+          key={day}
+          type="button"
+          onClick={() => handleDateClick(day)}
+          disabled={isDisabled(day)}
+          className={cn(
+            "h-8 w-8 rounded-full flex items-center justify-center text-sm",
+            isSelected(day) && "bg-green-600 text-white",
+            isToday(day) && !isSelected(day) && "border border-green-600",
+            isDisabled(day) && "text-gray-300 cursor-not-allowed",
+            !isSelected(day) && !isDisabled(day) && "hover:bg-gray-100"
+          )}
+        >
+          {day}
+        </button>
+      );
+    }
+    
+    return days;
+  };
+
+  return (
+    <div className="p-3">
+      <div className="flex items-center justify-between mb-4">
+        <button 
+          type="button" 
+          onClick={prevMonth}
+          className="p-1 rounded hover:bg-gray-100"
+        >
+          &lt;
+        </button>
+        <div className="font-medium">{monthName}</div>
+        <button 
+          type="button" 
+          onClick={nextMonth}
+          className="p-1 rounded hover:bg-gray-100"
+        >
+          &gt;
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {weekdays.map(day => (
+          <div key={day} className="h-8 w-8 flex items-center justify-center text-xs font-medium">
+            {day}
+          </div>
+        ))}
+      </div>
+      
+      <div className="grid grid-cols-7 gap-1">
+        {generateCalendarDays()}
+      </div>
+    </div>
+  );
+};
+
 export function RescheduleRequestForm({ appointments, timeSlots, onSubmit }: RescheduleRequestFormProps) {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -121,16 +238,6 @@ export function RescheduleRequestForm({ appointments, timeSlots, onSubmit }: Res
     setSelectedAppointment(selected);
   };
 
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
   const formatTimeForDisplay = (timeString: string) => {
     // Convert 24-hour format to 12-hour format if needed
     if (timeString.includes(":")) {
@@ -143,175 +250,178 @@ export function RescheduleRequestForm({ appointments, timeSlots, onSubmit }: Res
     return timeString; // Already in display format
   };
 
+  // Function to get today's date with time set to 00:00:00
+  const getToday = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="appointmentId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Select Appointment</FormLabel>
-              <Select 
-                onValueChange={(value) => {
-                  field.onChange(value);
-                  handleAppointmentChange(value);
-                }}
-                value={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an appointment to reschedule" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {appointments.map((appointment) => (
-                    <SelectItem key={appointment.id} value={appointment.id}>
-                      {appointment.service_type} - {formatDate(appointment.date)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {selectedAppointment && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="p-4">
-              <h3 className="font-medium mb-3">Current Appointment Details</h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <CalendarIcon className="h-4 w-4 text-blue-500" />
-                  <span>{formatDate(selectedAppointment.date)}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-blue-500" />
-                  <span>{selectedAppointment.time}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-blue-500" />
-                  <span>{selectedAppointment.address}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Building className="h-4 w-4 text-blue-500" />
-                  <span>{selectedAppointment.branch}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="mx-auto bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-semibold mb-6 text-gray-800">Reschedule Appointment</h2>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField
             control={form.control}
-            name="requestedDate"
+            name="appointmentId"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Requested Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        return date < today;
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormDescription>
-                  Select your preferred new date
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="requestedTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Requested Time</FormLabel>
+              <FormItem className="mb-6">
+                <FormLabel className="text-base font-medium">Select Appointment</FormLabel>
                 <Select 
-                  onValueChange={field.onChange}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    handleAppointmentChange(value);
+                  }}
                   value={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a time" />
+                    <SelectTrigger className="w-full h-12">
+                      <SelectValue placeholder="Select an appointment to reschedule" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {timeSlots.map((timeSlot) => (
-                      <SelectItem key={timeSlot} value={timeSlot}>
-                        {formatTimeForDisplay(timeSlot)}
+                    {appointments.map((appointment) => (
+                      <SelectItem key={appointment.id} value={appointment.id}>
+                        {appointment.service_type} - {formatLongDate(appointment.date)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {selectedAppointment && (
+            <Card className="border-green-200 bg-green-50 mb-6">
+              <CardContent className="p-4">
+                <h3 className="font-medium mb-3 text-green-800">Current Appointment Details</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-green-500" />
+                    <span className="text-gray-700">{formatLongDate(selectedAppointment.date)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-green-500" />
+                    <span className="text-gray-700">{formatTime(selectedAppointment.time || selectedAppointment.date)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-green-500" />
+                    <span className="text-gray-700">{selectedAppointment.address}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="requestedDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-base font-medium">Requested Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full h-12 pl-3 text-left font-normal flex justify-between items-center",
+                            !field.value && "text-gray-400"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "MMMM d, yyyy")
+                          ) : (
+                            "Select a date"
+                          )}
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <DatePicker
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        minDate={getToday()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormDescription>
+                    Select your preferred new date
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="requestedTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base font-medium">Requested Time</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full h-12">
+                        <SelectValue placeholder="Select a time" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timeSlots.map((timeSlot) => (
+                        <SelectItem key={timeSlot} value={timeSlot}>
+                          {formatTimeForDisplay(timeSlot)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Select your preferred new time
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="reason"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base font-medium">Reason for Rescheduling</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Please provide the reason for requesting a reschedule"
+                    className="resize-none h-32 p-3"
+                    {...field}
+                  />
+                </FormControl>
                 <FormDescription>
-                  Select your preferred new time
+                  Providing a detailed reason helps us process your request faster
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
 
-        <FormField
-          control={form.control}
-          name="reason"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reason for Rescheduling</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Please provide the reason for requesting a reschedule"
-                  className="resize-none h-32"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Providing a detailed reason helps us process your request faster
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button 
-          type="submit" 
-          className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white"
-          disabled={submitting}
-        >
-          {submitting ? "Submitting..." : "Submit Reschedule Request"}
-        </Button>
-      </form>
-    </Form>
+          <div className="pt-4">
+            <Button 
+              type="submit" 
+              className="w-full sm:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium"
+              disabled={submitting}
+            >
+              {submitting ? "Submitting..." : "Submit Reschedule Request"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 }

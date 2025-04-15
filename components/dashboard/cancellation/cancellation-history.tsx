@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -28,6 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { formatLongDate, formatShortDate, formatTime } from "@/lib/utils";
 
 interface Appointment {
   id: string;
@@ -54,7 +54,6 @@ interface CancellationHistoryProps {
 }
 
 export function CancellationHistory({ requests }: CancellationHistoryProps) {
-  const [selectedRequest, setSelectedRequest] = useState<CancellationRequest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const statusConfig = {
@@ -76,31 +75,6 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
       icon: Clock,
       description: "Your cancellation request is being reviewed. We'll notify you when the status changes."
     },
-  };
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
-  const formatDateTime = (dateTimeString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    };
-    return new Date(dateTimeString).toLocaleDateString('en-US', options);
-  };
-
-  const handleViewDetails = (request: CancellationRequest) => {
-    setSelectedRequest(request);
-    setIsDetailsOpen(true);
   };
 
   // Sort requests by date (newest first)
@@ -139,7 +113,7 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
                       {config.label}
                     </Badge>
                     <span className="text-sm text-gray-500">
-                      Submitted {formatDateTime(request.created_at)}
+                      Submitted {formatLongDate(request.created_at)}
                     </span>
                   </div>
                   <span className="text-sm font-medium">Request #{request.id}</span>
@@ -150,16 +124,14 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
                 {appointment ? (
                   <div className="space-y-3">
                     <h3 className="font-medium">{appointment.service_type}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-gray-500" />
-                        <span>{formatDate(appointment.date)}</span>
+                        <span>{formatShortDate(appointment.date)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-gray-500" />
-                        <span>{appointment.time}</span>
+                        <span>{formatTime(appointment.date)}</span>
                       </div>
-                    </div>
                     <div className="text-sm text-gray-700 line-clamp-2">
                       <span className="font-medium">Reason:</span> {request.reason}
                     </div>
@@ -174,13 +146,14 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
               
               <CardFooter className="border-t bg-gray-50 px-6 py-3">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto"
-                  onClick={() => handleViewDetails(request)}
+                  variant="outline"
+                  className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                  onClick={() => {
+                    toast.info("Feature not implemented: Cancel request");
+                    setIsDetailsOpen(false);
+                  }}
                 >
-                  <FileText className="h-4 w-4 mr-1" />
-                  View Details
+                  Cancel Request
                 </Button>
               </CardFooter>
             </Card>
@@ -188,7 +161,7 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
         })}
       </div>
 
-      {selectedRequest && (
+      {/* {selectedRequest && (
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
@@ -216,7 +189,7 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
                   </Badge>
                 </div>
                 <span className="text-sm text-gray-500">
-                  Submitted on {formatDateTime(selectedRequest.created_at)}
+                  Submitted on {formatLongDate(selectedRequest.created_at)}
                 </span>
               </div>
               
@@ -230,7 +203,7 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-blue-500" />
-                        <span>{formatDate(selectedRequest.appointment.date)}</span>
+                        <span>{formatShortDate(selectedRequest.appointment.date)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-blue-500" />
@@ -319,7 +292,7 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
+      )} */}
     </>
   );
 }

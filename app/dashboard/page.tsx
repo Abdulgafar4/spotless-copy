@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useClientServices } from "@/hooks/use-client-service";
 import { toast } from "sonner";
+import { useClientBookings } from "@/hooks/use-client-bookings";
 
 interface BookingData {
   service: string;
@@ -38,7 +39,8 @@ interface ErrorData {
 interface Booking {
   id: string;
   date: string;
-  status: "Finished" | "Upcoming" | "Canceled";
+  refId: string;
+  status: "Finished" | "Upcoming" | "Canceled" | "Waiting Approval";
 }
 
 const bookingSchema = z.object({
@@ -55,7 +57,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const { appointments, loading } = useClientAppointments();
   const { services, branches, submitBooking, loading: servicesLoading } = useClientServices();
-
+    const {
+      paginatedBookings,
+    } = useClientBookings(10); 
   
   const [bookingData, setBookingData] = useState<BookingData>({
     service: "",
@@ -137,19 +141,25 @@ export default function DashboardPage() {
       day: 'numeric', 
       year: 'numeric'
     }),
-    time: apt.time
+    time: new Date(apt.date).toLocaleTimeString('en-US', {
+      hour: 'numeric', 
+          minute: 'numeric',
+          hour12: true
+    }),
   }));
 
   // Format booking history from appointments
-  const bookingHistory: Booking[] = appointments
-    .slice(0, 3)
+  const bookingHistory: Booking[] = paginatedBookings
+    .slice(0, 5)
     .map(apt => {
       // Map the appointment status to one of the three required status types
-      let status: "Finished" | "Upcoming" | "Canceled";
+      let status: "Finished" | "Upcoming" | "Canceled" | "Waiting Approval";
       if (apt.status === "completed") {
         status = "Finished";
       } else if (apt.status === "confirmed") {
         status = "Upcoming";
+      }else if (apt.status === "pending") {
+        status = "Waiting Approval";
       } else {
         status = "Canceled";
       }
@@ -163,7 +173,8 @@ export default function DashboardPage() {
           minute: 'numeric',
           hour12: true
         }),
-        status: status
+        status: status,
+        refId: apt.reference_number
       };
     });
   // Create service options from real services data
@@ -177,9 +188,6 @@ export default function DashboardPage() {
     value: branch.id,
     label: branch.name
   }));
-
-  console.log(branchOptions)
-
 
   return (
     <DashboardLayout>
@@ -252,7 +260,6 @@ export default function DashboardPage() {
           />
         </form>
       </div>
-
       <div className="flex flex-col lg:flex-row gap-4 max-h-lg">
         <div className="bg-white p-6 rounded-lg shadow-lg flex-1">
           <div className="flex justify-between items-center mb-4">
@@ -260,7 +267,7 @@ export default function DashboardPage() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => router.push("/dashboard/appointments")}
+              onClick={() => router.push("/dashboard/booking-history")}
             >
               VIEW ALL
             </Button>

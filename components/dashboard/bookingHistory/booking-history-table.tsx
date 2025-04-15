@@ -67,6 +67,16 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
+  const formatTime = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      hour: 'numeric', 
+          minute: 'numeric',
+          hour12: true
+    };
+    return new Date(dateString).toLocaleTimeString('en-US', options);
+  };
+
+
   return (
     <>
       <Table>
@@ -87,11 +97,11 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
 
             return (
               <TableRow key={booking.id} className="hover:bg-gray-50">
-                <TableCell className="font-medium">#{booking.id}</TableCell>
+                <TableCell className="font-medium">#{booking.reference_number}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span>{formatDate(booking.date)}</span>
-                    <span className="text-xs text-gray-500">{booking.time}</span>
+                    <span className="text-xs text-gray-500">{formatTime(booking.date)}</span>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell max-w-[200px] truncate">

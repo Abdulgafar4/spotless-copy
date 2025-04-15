@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { generateUniqueBookingId } from "@/lib/booking-id-generator";
 
 export interface Service {
   id: string;
@@ -117,11 +118,29 @@ export const useClientServices = (): UseClientServicesReturn => {
         throw userError;
       }
       
-      // Create booking in database
+      // Fetch existing booking reference numbers to generate a unique ID
+      const { data: existingBookings, error: bookingsFetchError } = await supabase
+        .from("bookings")
+        .select("reference_number")
+        .order("created_at", { ascending: false })
+        .limit(100);
+        
+      if (bookingsFetchError) {
+        console.error("Error fetching existing bookings:", bookingsFetchError);
+      }
+      
+      // Generate a unique booking reference number
+      const bookingRef = await generateUniqueBookingId(
+        existingBookings?.map(booking => booking.reference_number) || []
+      );
+      
+      // Create booking in database with a UUID id and our custom reference_number
       const { data, error: bookingError } = await supabase
         .from("bookings")
         .insert([
           {
+            // id will be auto-generated as UUID by Supabase
+            reference_number: bookingRef, // Store our custom booking ID here
             service_type: bookingData.service,
             date: bookingData.date,
             user_id: userData.user?.id,
@@ -139,7 +158,7 @@ export const useClientServices = (): UseClientServicesReturn => {
         throw bookingError;
       }
       
-      toast.success("Booking submitted successfully!");
+      toast.success(`Booking ${bookingRef} submitted successfully!`);
       return true;
     } catch (err) {
       setError(

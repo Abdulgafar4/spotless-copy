@@ -70,6 +70,7 @@ interface EmployeeFilters {
 // Types
 interface Booking {
   id: string;
+  refId: string;
   customerName: string;
   customerPhone: string;
   customerEmail: string;

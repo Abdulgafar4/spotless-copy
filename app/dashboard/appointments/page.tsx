@@ -5,19 +5,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Loader2, Calendar } from "lucide-react";
 import { useClientAppointments } from "@/hooks/use-client-appointments";
-import { AppointmentFilter } from "@/components/dashboard/appointments/appointment-filter";
-import { AppointmentErrorState } from "@/components/dashboard/appointments/appointment-error-state";
 import { AppointmentEmptyState } from "@/components/dashboard/appointments/appointment-empty-state";
+import { AppointmentErrorState } from "@/components/dashboard/appointments/appointment-error-state";
 import { AppointmentList } from "@/components/dashboard/appointments/appointment-list";
 
-export default function AppointmentsPage() {
+export default function ConfirmedAppointmentsPage() {
   const { 
-    filteredAppointments, 
+    appointments, 
     loading, 
     error, 
-    statusFilter, 
-    setStatusFilter,
-    fetchAppointments
+    fetchAppointments 
   } = useClientAppointments();
 
   return (
@@ -25,16 +22,12 @@ export default function AppointmentsPage() {
       <Card className="w-full">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-2xl font-bold">Upcoming Appointments</CardTitle>
+            <CardTitle className="text-2xl font-bold">Confirmed Appointments</CardTitle>
             <CardDescription>
-              View and manage your scheduled cleaning services
+              View your confirmed cleaning services
             </CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
-            <AppointmentFilter
-              currentFilter={statusFilter} 
-              onFilterChange={setStatusFilter} 
-            />
             <Button
               variant="outline"
               className="w-full sm:w-auto"
@@ -53,17 +46,17 @@ export default function AppointmentsPage() {
             </div>
           ) : error ? (
             <AppointmentErrorState onRetry={fetchAppointments} />
-          ) : filteredAppointments.length === 0 ? (
+          ) : appointments.length === 0 ? (
             <AppointmentEmptyState />
           ) : (
-            <AppointmentList appointments={filteredAppointments} />
+            <AppointmentList />
           )}
         </CardContent>
         
-        {filteredAppointments.length > 0 && (
+        {appointments.length > 0 && (
           <CardFooter className="flex justify-between">
             <p className="text-sm text-gray-500">
-              Showing {filteredAppointments.length} appointment(s)
+              Showing {appointments.length} confirmed appointment(s)
             </p>
           </CardFooter>
         )}

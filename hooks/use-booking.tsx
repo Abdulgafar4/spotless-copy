@@ -99,6 +99,7 @@ export const useAdminBookings = (): UseBookingsReturn => {
         const profile = profilesMap[booking.user_id] || {};
         return {
           id: booking.id || "",
+          refId: booking.reference_number,
           customerName: profile.first_name && profile.last_name
             ? `${profile.first_name} ${profile.last_name}`
             : "Unknown Customer",
@@ -135,6 +136,7 @@ export const useAdminBookings = (): UseBookingsReturn => {
   const formatBookingsData = (bookingsData: any) => {
     return bookingsData.map((booking: any) => ({
       id: booking.id || "",
+      refId: booking.reference_number,
       customerName: "Unknown Customer",
       customerPhone: "",
       customerEmail: "",

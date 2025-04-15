@@ -1,21 +1,21 @@
 // components/dashboard/appointments/appointment-card.tsx
-import { useState } from "react";
-import { 
-  Clock, Calendar, MapPin, Building, ArrowRight, 
+import {
+  Clock, Calendar,
   CheckCircle, AlertCircle, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Appointment } from "@/hooks/use-client-appointments";
-import { AppointmentDetailsDialog } from "./appointment-details-dialog";
+import { formatLongDate, formatTime } from "@/lib/utils";
+import Link from "next/link";
 
 interface AppointmentCardProps {
   appointment: Appointment;
 }
 
 export function AppointmentCard({ appointment }: AppointmentCardProps) {
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  
+
+
   const statusConfig = {
     confirmed: {
       className: "bg-green-100 text-green-800 border-green-200",
@@ -39,17 +39,6 @@ export function AppointmentCard({ appointment }: AppointmentCardProps) {
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = config.icon;
 
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
   return (
     <>
       <div className="bg-white border rounded-lg hover:shadow-md transition-shadow">
@@ -59,50 +48,44 @@ export function AppointmentCard({ appointment }: AppointmentCardProps) {
               <StatusIcon className="h-3.5 w-3.5 mr-1" />
               {config.label}
             </Badge>
-            <span className="text-sm font-medium text-gray-500">#{appointment.id}</span>
+            <span className="text-sm font-medium text-gray-500">#{appointment.refId}</span>
           </div>
           <h3 className="font-bold text-lg mb-1">{appointment.title || appointment.service_type}</h3>
-          <p className="text-gray-500">{appointment.service_type}</p>
         </div>
-        
+
         <div className="p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-gray-500" />
-            <span>{formatDate(appointment.date)}</span>
+            <span>{formatLongDate(appointment.date)}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-gray-500" />
-            <span>{appointment.time}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <MapPin className="h-4 w-4 text-gray-500" />
-            <span className="truncate" title={appointment.address}>
-              {appointment.address}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Building className="h-4 w-4 text-gray-500" />
-            <span>{appointment.branch}</span>
+            <span>{formatTime(appointment.date)}</span>
           </div>
         </div>
-        
-        <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => setIsDetailsOpen(true)}
+
+        <div className="p-4 border-t bg-gray-50 rounded-b-lg flex flex-col sm:flex-row justify-around">
+          <Button
+            variant="outline"
+            className="sm:w-auto w-full bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
           >
-            View Details
-            <ArrowRight className="h-4 w-4 ml-2" />
+            <Link href="/dashboard/cancellation">
+              Request Cancellation
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="sm:w-auto w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+
+
+          >
+            <Link href="/dashboard/reschedule">
+              Request Reschedule
+
+            </Link>
           </Button>
         </div>
       </div>
-
-      <AppointmentDetailsDialog
-        appointment={appointment}
-        isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
-      />
     </>
   );
 }

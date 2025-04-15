@@ -144,7 +144,7 @@ export function AssignStaffDialog({
         <DialogHeader>
           <DialogTitle>Assign Staff to Booking</DialogTitle>
           <DialogDescription>
-            Select staff members to assign to booking {booking.id}
+            Select staff members to assign to booking {booking.refId}
           </DialogDescription>
         </DialogHeader>
         

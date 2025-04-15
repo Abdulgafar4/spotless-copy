@@ -32,7 +32,7 @@ export default function BookingHistoryPage() {
     setSearchTerm,
     setCurrentPage,
     fetchBookings
-  } = useClientBookings(5); // Show 5 items per page
+  } = useClientBookings(10); // Show 10 items per page
 
   // Handle filter changes
   const handleStatusChange = (status: string) => {

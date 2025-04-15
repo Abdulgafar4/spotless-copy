@@ -158,7 +158,7 @@ export function MessageCustomerDialog({
             <div>
               <h3 className="font-medium">{booking.customerName}</h3>
               <div className="text-sm text-gray-500">
-                Booking ID: {booking.id} | {booking.service}
+                Booking ID: {booking.refId} | {booking.service}
               </div>
             </div>
           </div>

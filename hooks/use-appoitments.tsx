@@ -130,7 +130,7 @@ export const useAdminAppointments = (): UseAdminAppointmentsReturn => {
   // Update an existing appointment
   const updateAppointment = useCallback(
     async (
-      id: string,
+      id: any,
       appointmentData: Partial<Appointment>
     ): Promise<Appointment> => {
       if (!isAdmin) {
@@ -171,7 +171,7 @@ export const useAdminAppointments = (): UseAdminAppointmentsReturn => {
 
   // Delete an appointment
   const deleteAppointment = useCallback(
-    async (id: string): Promise<boolean> => {
+    async (id: any): Promise<boolean> => {
       if (!isAdmin) {
         throw new Error("Unauthorized: Admin access required");
       }

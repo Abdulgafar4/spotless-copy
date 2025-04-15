@@ -1,10 +1,11 @@
-// hooks/use-client-appointments.tsx
+// hooks/use-confirmed-appointments.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+
 
 export interface Appointment {
   id: string;
@@ -50,7 +51,7 @@ export const useClientAppointments = (): UseClientAppointmentsReturn => {
     }
   }, [statusFilter, appointments]);
 
-  // Fetch appointments from Supabase
+  // Fetch confirmed appointments from bookings
   const fetchAppointments = useCallback(async () => {
     if (!user) {
       setError(new Error("User not authenticated"));
@@ -63,24 +64,92 @@ export const useClientAppointments = (): UseClientAppointmentsReturn => {
       setError(null);
       
       const { data, error: fetchError } = await supabase
-        .from("appointments")
+        .from("bookings")
         .select("*")
         .eq("user_id", user.id)
+        .eq("status", "confirmed")
         .order("date", { ascending: true });
 
       if (fetchError) {
         throw fetchError;
       }
 
-      setAppointments(data || []);
+      // Transform bookings to appointments format
+      const transformedAppointments: Appointment[] = (data || []).map(booking => ({
+        id: booking.id,
+        refId: booking.reference_number,
+        title: booking.service_type, // Using service_type as title
+        date: booking.date,
+        time: booking.time,
+        status: booking.status,
+        address: booking.address || "",
+        service_type: booking.service_type,
+        branch: booking.branch || "",
+        notes: booking.notes,
+        user_id: booking.user_id
+      }));
+
+      setAppointments(transformedAppointments);
     } catch (err) {
-      console.error("Error fetching appointments:", err);
-      setError(err instanceof Error ? err : new Error("Failed to fetch appointments"));
-      toast.error("Failed to load appointments");
+      console.error("Error fetching confirmed appointments:", err);
+      setError(err instanceof Error ? err : new Error("Failed to fetch confirmed appointments"));
+      toast.error("Failed to load confirmed appointments");
     } finally {
       setLoading(false);
     }
   }, [user]);
+
+  // Initialize by fetching data on component mount
+  useEffect(() => {
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user, fetchAppointments]);
+
+  // Set up real-time subscription for booking status changes
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to changes in the bookings table
+    const bookingsSubscription = supabase
+      .channel('bookings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for all events (insert, update, delete)
+          schema: 'public',
+          table: 'bookings',
+          filter: `user_id=eq.${user.id}` // Only for this user's bookings
+        },
+        (payload) => {
+          // If a booking is updated to "confirmed" status
+          if (
+            payload.eventType === 'UPDATE' && 
+            payload.new && 
+            payload.new.status === 'confirmed'
+          ) {
+            // Refresh the appointments list
+            fetchAppointments();
+          }
+          
+          // If a new confirmed booking is created
+          if (
+            payload.eventType === 'INSERT' && 
+            payload.new && 
+            payload.new.status === 'confirmed'
+          ) {
+            // Refresh the appointments list
+            fetchAppointments();
+          }
+        }
+      )
+      .subscribe();
+
+    // Clean up subscription on unmount
+    return () => {
+      supabase.removeChannel(bookingsSubscription);
+    };
+  }, [user, fetchAppointments]);
 
   // Submit a cancellation request
   const requestCancellation = useCallback(async (appointmentId: string, reason: string): Promise<boolean> => {
@@ -94,7 +163,7 @@ export const useClientAppointments = (): UseClientAppointmentsReturn => {
       
       // Verify the appointment belongs to the user
       const { data: appointment, error: appointmentError } = await supabase
-        .from("appointments")
+        .from("bookings")
         .select("id, user_id, status")
         .eq("id", appointmentId)
         .single();
@@ -162,7 +231,7 @@ export const useClientAppointments = (): UseClientAppointmentsReturn => {
       
       // Verify the appointment belongs to the user
       const { data: appointment, error: appointmentError } = await supabase
-        .from("appointments")
+        .from("bookings")
         .select("id, user_id, status")
         .eq("id", appointmentId)
         .single();

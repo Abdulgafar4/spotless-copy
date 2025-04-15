@@ -75,7 +75,7 @@ export function BookingDetailsDialog({
       <DialogContent className="w-[95%] max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-10">
         <DialogHeader>
           <DialogTitle className="flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>Booking Details - {booking.id}</span>
+            <span>Booking Details - {booking.refId}</span>
             {getStatusBadge(booking.status)}
           </DialogTitle>
         </DialogHeader>

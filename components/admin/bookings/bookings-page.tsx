@@ -4,8 +4,6 @@ import { useEffect, useState } from "react"
 import {
   ChevronLeft,
   ChevronRight,
-  Printer,
-  Download,
   Loader2,
   AlertCircle,
 } from "lucide-react"
