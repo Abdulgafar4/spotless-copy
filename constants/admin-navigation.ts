@@ -9,6 +9,8 @@ import {
     Settings,
     NotebookText,
     HandPlatter,
+    Clock,
+    ClipboardCheck,
   } from "lucide-react"
 
 export const getAdminNavigation = (pathname?: string) => [
@@ -26,6 +28,8 @@ export const getAdminNavigation = (pathname?: string) => [
         pathname === "/admin/branches" ||
         pathname?.startsWith("/admin/branches/"),
     },
+    { name: "Reschedule", href: "/admin/reschedule", icon: Clock, current: "/admin/reschedule" },
+    { name: "Cancellations", href: "/admin/cancellations", icon: ClipboardCheck, current: "/admin/cancellations" },
     // {
     //   name: "Scheduling",
     //   href: "/admin/scheduling",

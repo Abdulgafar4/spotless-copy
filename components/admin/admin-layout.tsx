@@ -14,6 +14,8 @@ import {
   Star,
   Settings,
   NotebookText,
+  Clock,
+  ClipboardCheck,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -35,6 +37,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: "Bookings", href: "/admin/bookings", icon: NotebookText },
     { name: "Employees", href: "/admin/employees", icon: NotebookText },
     { name: "Services", href: "/admin/services", icon: NotebookText },
+    { name: "Reschedule", href: "/admin/reschedule", icon: Clock },
+    { name: "Cancellations", href: "/admin/cancellations", icon: ClipboardCheck },
   ];
 
   const currentPage = navigation.find((nav) => pathname === nav.href);

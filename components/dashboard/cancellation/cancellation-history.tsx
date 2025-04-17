@@ -4,10 +4,7 @@ import {
   XCircle, 
   Clock, 
   Calendar, 
-  FileText, 
   AlertTriangle,
-  MapPin,
-  Building 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,17 +12,8 @@ import {
   Card,
   CardContent,
   CardFooter,
-  CardHeader,
-  CardTitle,
+  CardHeader
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatLongDate, formatShortDate, formatTime } from "@/lib/utils";
 
