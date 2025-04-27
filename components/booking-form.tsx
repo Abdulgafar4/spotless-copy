@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
@@ -82,7 +82,7 @@ const cities = [
   { value: "london", label: "London" },
 ];
 
-export default function BookingForm() {
+export function BookingFormContent() {
   const router = useRouter()
   const { user } = useAuth()
 
@@ -647,5 +647,13 @@ export default function BookingForm() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+export default function BookingForm() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BookingFormContent />
+    </Suspense>
   );
 }
