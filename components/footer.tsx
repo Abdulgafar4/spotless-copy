@@ -25,7 +25,7 @@ const Footer = () => {
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               <Image
-                src="/logo.svg"
+                src="/new-logo.png"
                 alt="Spotless Transitions Logo"
                 width={180}
                 height={40}
