@@ -7,7 +7,7 @@ interface UseAdminEmployeesReturn {
   loading: boolean;
   error: Error | null;
   fetchEmployees: (filters?: EmployeeFilters) => Promise<void>;
-  createEmployee: (employeeData: Partial<Employee>) => Promise<Employee>;
+  createEmployee: (employeeData: Partial<Employee>, password?: string) => Promise<Employee>;
   updateEmployee: (
     id: string,
     employeeData: Partial<Employee>
@@ -25,6 +25,30 @@ export const useAdminEmployees = (): UseAdminEmployeesReturn => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const { user, isAdmin } = useAuth();
+
+  const generateSecurePassword = (length: number = 12): string => {
+    const upperCaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowerCaseChars = 'abcdefghijklmnopqrstuvwxyz';
+    const numberChars = '0123456789';
+    const specialChars = '!@#$%^&*';
+    const allChars = upperCaseChars + lowerCaseChars + numberChars + specialChars;
+    
+    let password = '';
+    // Ensure at least one of each type
+    password += upperCaseChars[Math.floor(Math.random() * upperCaseChars.length)];
+    password += lowerCaseChars[Math.floor(Math.random() * lowerCaseChars.length)];
+    password += numberChars[Math.floor(Math.random() * numberChars.length)];
+    password += specialChars[Math.floor(Math.random() * specialChars.length)];
+    
+    // Fill the rest randomly
+    for (let i = password.length; i < length; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+  };
+  
 
   // Fetch all employees with optional filters
   const fetchEmployees = useCallback(
@@ -82,75 +106,93 @@ export const useAdminEmployees = (): UseAdminEmployeesReturn => {
   );
 
   // Create a new employee
-  const createEmployee = useCallback(
-    async (employeeData: Partial<Employee>): Promise<Employee> => {
-      if (!isAdmin) {
-        throw new Error("Unauthorized: Admin access required");
-      }
+// In hooks/use-employees.tsx
 
-      try {
-        setLoading(true);
-        let authUserId: string | null = null;
+const createEmployee = useCallback(
+  async (employeeData: Partial<Employee>, password?: string): Promise<Employee> => {
+    if (!isAdmin) {
+      throw new Error("Unauthorized: Admin access required");
+    }
 
-        // Try to create auth user if email is provided
-        if (employeeData.email) {
-          try {
-            // Generate a temporary password
-            const tempPassword = Math.random().toString(36).slice(-8);
+    try {
+      setLoading(true);
+      let authUserId: string | null | undefined = null;
 
-            const { data: authData, error: authError } =
-              await supabase.auth.admin.createUser({
-                email: employeeData.email,
-                password: tempPassword,
-                email_confirm: true,
-                user_metadata: {
-                  role: employeeData.role || "employee",
-                  full_name: `${employeeData.first_name} ${employeeData.last_name}`,
-                },
-              });
-
-            if (!authError) {
-              authUserId = authData.user.id;
-            } else {
-              console.warn("Failed to create auth user, continuing with employee creation:", authError);
-            }
-          } catch (authErr) {
-            console.warn("Auth user creation failed, continuing with employee creation:", authErr);
-            // Continue with employee creation even if auth creation fails
-          }
-        }
-
-        // Create employee record in the database
-        const { data, error: supabaseError } = await supabase
+      // First, check if an employee with this email already exists
+      if (employeeData.email) {
+        const { data: existingEmployee, error: checkError } = await supabase
           .from("employees")
-          .insert([
-            {
-              ...employeeData,
-              auth_id: authUserId,
-              created_at: new Date(),
-            },
-          ])
-          .select();
+          .select("*")
+          .eq("email", employeeData.email)
+          .single();
 
-        if (supabaseError) {
-          throw supabaseError;
+        if (existingEmployee) {
+          throw new Error("An employee with this email already exists");
         }
 
-        const newEmployee = data[0] as Employee;
-        setEmployees((prevEmployees) => [...prevEmployees, newEmployee]);
-        return newEmployee;
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("An unknown error occurred")
-        );
-        console.error("Failed to create employee:", err);
-        throw err;
-      } finally {
-        setLoading(false);
+        try {
+          const employeePassword = password || generateSecurePassword();
+
+          const { data: authData, error: authError } =
+            await supabase.auth.signUp({
+              email: employeeData.email,
+              password: employeePassword,
+              options: {
+                data: {
+                  firstName: employeeData.first_name,
+                  lastName: employeeData.last_name,
+                  full_name: `${employeeData.first_name} ${employeeData.last_name}`,
+                  phone: employeeData.phone,
+                  user_role: employeeData.role
+                },
+              },
+            });
+
+          if (!authError) {
+            authUserId = authData?.user?.id;
+          } else {
+            throw new Error(authError.message);
+          }
+        } catch (authErr) {
+          throw new Error(`Failed to create auth user: ${authErr}`);
+        }
       }
-    },
-    [isAdmin]
-  );
+
+      // Create employee record in the database
+      const { data, error: supabaseError } = await supabase
+        .from("employees")
+        .insert([
+          {
+            ...employeeData,
+            auth_id: authUserId,
+            created_at: new Date(),
+          },
+        ])
+        .select();
+
+      if (supabaseError) {
+        // If employee creation fails but auth user was created, try to delete the auth user
+        if (authUserId) {
+          await supabase.auth.admin.deleteUser(authUserId);
+        }
+        throw supabaseError;
+      }
+
+      const newEmployee = data[0] as Employee;
+      setEmployees((prevEmployees) => [...prevEmployees, newEmployee]);
+      return newEmployee;
+    } catch (err) {
+      setError(
+        err instanceof Error ? err : new Error("An unknown error occurred")
+      );
+      console.error("Failed to create employee:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  },
+  [isAdmin]
+);
 
   // Update an existing employee
   const updateEmployee = useCallback(

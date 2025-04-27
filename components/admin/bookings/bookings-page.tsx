@@ -172,8 +172,13 @@ export default function BookingsPage() {
     try {
       await updateBookingStatus(selectedBooking.id, confirmAction.action as BookingStatus);
       setIsConfirmDialogOpen(false);
+      
+      // Refetch bookings after status update
+      await fetchBookings();
+      toast.success(`Booking status updated to ${confirmAction.action}`);
     } catch (error) {
       console.error("Failed to update booking status:", error);
+      toast.error("Failed to update booking status");
     }
   }
 
@@ -193,25 +198,30 @@ export default function BookingsPage() {
 
       // Add toast notification for feedback
       toast.success("Staff successfully assigned to booking");
-
-      // Reload the page after successful assignment
-      window.location.reload();
+      
+      // Refetch bookings instead of reloading the page
+      await fetchBookings();
     } catch (error) {
       console.error("Failed to assign staff:", error);
+      toast.error("Failed to assign staff to booking");
     }
   }
 
   const handleMessageCustomer = (booking: Booking) => {
     setSelectedBooking(booking)
     setIsMessageDialogOpen(true)
-
-
   }
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = async (message: string) => {
     // In a real app, this would send a message to the customer
     console.log(`Sending message to ${selectedBooking?.customerName}:`, message);
     setIsMessageDialogOpen(false);
+    
+    // Show success toast
+    toast.success(`Message sent to ${selectedBooking?.customerName}`);
+    
+    // Refetch bookings in case message sending affects booking status
+    await fetchBookings();
   }
 
   // Filtered and Paginated Bookings
@@ -364,7 +374,7 @@ export default function BookingsPage() {
         isOpen={isDetailsDialogOpen}
         setIsOpen={setIsDetailsDialogOpen}
         booking={selectedBooking}
-        onAssignStaff={handleAssignStaffSubmit}
+        onAssignStaff={handleAssignStaff}
         onUpdateStatus={handleUpdateStatus}
         onMessageCustomer={handleMessageCustomer}
       />

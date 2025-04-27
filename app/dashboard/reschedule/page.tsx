@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useClientAppointments, Appointment } from "@/hooks/use-client-appointments";
+import { useTimeSlots } from "@/hooks/use-time-slots";
 import { supabase } from "@/lib/supabaseClient";
 import { RescheduleRequestForm } from "@/components/dashboard/reschedule/reschedule-form";
 import { RescheduleHistory } from "@/components/dashboard/reschedule/reschedule-history";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/dashboard-layout";
 
 interface RescheduleRequest {
@@ -25,15 +26,12 @@ interface RescheduleRequest {
 export default function ReschedulePage() {
   const { user } = useAuth();
   const { appointments, requestReschedule } = useClientAppointments();
+  const { timeSlots, loading: timeSlotsLoading, fetchTimeSlots } = useTimeSlots();
   const [rescheduleRequests, setRescheduleRequests] = useState<RescheduleRequest[]>([]);
   const [activeTab, setActiveTab] = useState("request");
   const [loading, setLoading] = useState(true);
-  
-  // Available time slots (would typically come from an API)
-  const timeSlots = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
-    "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
-  ];
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>("");
   
   // Filter appointments that can be rescheduled (confirmed status)
   const reschedulableAppointments = appointments.filter(
@@ -72,6 +70,29 @@ export default function ReschedulePage() {
     }
   }, [user, fetchRescheduleRequests]);
 
+  // Fetch time slots when appointment and date are selected
+  useEffect(() => {
+    if (selectedAppointment && selectedDate) {
+      fetchTimeSlots(
+        selectedDate, 
+        selectedAppointment.branch_id, 
+        selectedAppointment.service_type
+      );
+    }
+  }, [selectedAppointment, selectedDate, fetchTimeSlots]);
+
+  // Handle appointment selection
+  const handleAppointmentSelect = (appointmentId: string) => {
+    const appointment = reschedulableAppointments.find(apt => apt.id === appointmentId);
+    setSelectedAppointment(appointment || null);
+    setSelectedDate(""); // Reset date when appointment changes
+  };
+
+  // Handle date selection
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date);
+  };
+
   // Handle reschedule request submission
   const handleRescheduleRequest = async (
     appointmentId: string, 
@@ -93,53 +114,66 @@ export default function ReschedulePage() {
 
   return (
     <DashboardLayout>
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Reschedule Requests</h2>
-        <p className="text-muted-foreground">
-          Request to reschedule your upcoming appointments or view your request history
-        </p>
-      </div>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Reschedule Requests</h2>
+          <p className="text-muted-foreground">
+            Request to reschedule your upcoming appointments or view your request history
+          </p>
+        </div>
 
-      <Tabs defaultValue="request" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="request">New Request</TabsTrigger>
-          <TabsTrigger value="history">Request History</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="request" className="space-y-4 mt-6">
-          {reschedulableAppointments.length > 0 ? (
-            <RescheduleRequestForm 
-              appointments={reschedulableAppointments} 
-              timeSlots={timeSlots}
-              onSubmit={handleRescheduleRequest}
-            />
-          ) : (
-            <div className="text-center p-8 border rounded-lg">
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-lg font-medium">No Eligible Appointments</h3>
-              <p className="text-gray-500 mt-2 mb-4">
-                You don't have any upcoming appointments that can be rescheduled.
-              </p>
-              <Button 
-                variant="outline"
-                onClick={() => window.location.href = "/dashboard/appointments"}
-              >
-                View All Appointments
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="history" className="space-y-4 mt-6">
-          {loading ? (
-            <div className="text-center py-8">Loading requests...</div>
-          ) : (
-            <RescheduleHistory requests={rescheduleRequests} />
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+        <Tabs defaultValue="request" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="request">New Request</TabsTrigger>
+            <TabsTrigger value="history">Request History</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="request" className="space-y-4 mt-6">
+            {reschedulableAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {/* Show loading indicator when fetching time slots */}
+                {timeSlotsLoading && (
+                  <div className="flex items-center justify-center p-4 border rounded-lg bg-gray-50">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    <span>Loading available time slots...</span>
+                  </div>
+                )}
+                
+                <RescheduleRequestForm 
+                  appointments={reschedulableAppointments} 
+                  timeSlots={timeSlots.map(slot => slot.startTime)}
+                  onSubmit={handleRescheduleRequest}
+                  onAppointmentSelect={handleAppointmentSelect}
+                  onDateSelect={handleDateSelect}
+                  loading={timeSlotsLoading}
+                />
+              </div>
+            ) : (
+              <div className="text-center p-8 border rounded-lg">
+                <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-lg font-medium">No Eligible Appointments</h3>
+                <p className="text-gray-500 mt-2 mb-4">
+                  You don't have any upcoming appointments that can be rescheduled.
+                </p>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.location.href = "/dashboard/appointments"}
+                >
+                  View All Appointments
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="history" className="space-y-4 mt-6">
+            {loading ? (
+              <div className="text-center py-8">Loading requests...</div>
+            ) : (
+              <RescheduleHistory requests={rescheduleRequests} />
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </DashboardLayout>
   );
 }

@@ -26,11 +26,6 @@ export const useAdminServices = (): UseAdminServicesReturn => {
 
   // Fetch all services
   const fetchServices = useCallback(async () => {
-    if (!isAdmin) {
-      setError(new Error("Unauthorized: Admin access required"));
-      setLoading(false);
-      return;
-    }
 
     try {
       setLoading(true);
@@ -52,7 +47,7 @@ export const useAdminServices = (): UseAdminServicesReturn => {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, []);
 
   // Create a new service
   const createService = useCallback(
@@ -234,10 +229,8 @@ export const useAdminServices = (): UseAdminServicesReturn => {
 
   // Initialize by fetching services on first load
   useEffect(() => {
-    if (isAdmin) {
       fetchServices();
-    }
-  }, [fetchServices, isAdmin]);
+  }, [fetchServices]);
 
   return {
     services,

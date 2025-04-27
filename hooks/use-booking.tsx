@@ -13,6 +13,7 @@ interface UseBookingsReturn {
   getBookingById: (id: string) => Promise<Booking>;
   updateBookingStatus: (id: string, status: BookingStatus) => Promise<Booking>;
   assignStaffToBooking: (id: string, staffIds: string[]) => Promise<Booking>;
+  updateOverdueBookings: () => Promise<void>;
   isAuthorized: boolean;
   canCreate: boolean;
   canViewAll: boolean;
@@ -96,15 +97,15 @@ export const useAdminBookings = (): UseBookingsReturn => {
       
       // Step 5: Transform bookings to the required format
       const formattedBookings = bookingsData.map(booking => {
-        const profile = profilesMap[booking.user_id] || {};
+        const profile = profilesMap[booking?.user_id] || {};
         return {
           id: booking.id || "",
           refId: booking.reference_number,
           customerName: profile.first_name && profile.last_name
             ? `${profile.first_name} ${profile.last_name}`
-            : "Unknown Customer",
-          customerPhone: profile.phone || "",
-          customerEmail: profile.email || "",
+            : booking.customer_name || "",
+          customerPhone: profile.phone || booking.phone || "",
+          customerEmail: profile.email || booking.customer_email|| "",
           service: booking.service_type || "",
           branch: booking.branch_id || "",
           date: booking.date || "",
@@ -122,6 +123,7 @@ export const useAdminBookings = (): UseBookingsReturn => {
       });
       
       setBookings(formattedBookings);
+
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("An unknown error occurred")
@@ -131,6 +133,61 @@ export const useAdminBookings = (): UseBookingsReturn => {
       setLoading(false);
     }
   }, [isAdmin, userId, authLoading]);
+
+  const updateOverdueBookings = useCallback(async () => {
+    if (authLoading) {
+      return;
+    }
+  
+    if (!isAdmin) {
+      return; // Only admins should run this function
+    }
+  
+    try {
+      // Get all pending bookings
+      const { data: pendingBookings, error: fetchError } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("status", "pending");
+  
+      if (fetchError) {
+        throw fetchError;
+      }
+  
+      if (!pendingBookings || pendingBookings.length === 0) {
+        return;
+      }
+  
+      // Get current date and time
+      const now = new Date();
+      const overdueBookings = pendingBookings.filter(booking => {
+        const bookingDate = new Date(booking.date);
+        // If booking date has passed and status is still pending
+        return bookingDate < now;
+      });
+  
+      if (overdueBookings.length === 0) {
+        return;
+      }
+  
+      // Update all overdue bookings to 'due' status
+      const updates = overdueBookings.map(booking => 
+        supabase
+          .from("bookings")
+          .update({ status: "due" })
+          .eq("id", booking.id)
+      );
+  
+      await Promise.all(updates);
+  
+      // Refresh bookings to reflect the changes
+      await fetchBookings();
+  
+    } catch (err) {
+      console.error("Failed to update overdue bookings:", err);
+    }
+  }, [isAdmin, authLoading, fetchBookings]);
+  
 
   // Helper function to format booking data even if profiles aren't available
   const formatBookingsData = (bookingsData: any) => {
@@ -436,6 +493,18 @@ export const useAdminBookings = (): UseBookingsReturn => {
     }
   }, [authLoading]);
 
+  useEffect(() => {
+    if (!authLoading && isAdmin) {
+      updateOverdueBookings();
+  
+      const interval = setInterval(() => {
+        updateOverdueBookings();
+      }, 86400000);
+  
+      return () => clearInterval(interval);
+    }
+  }, [authLoading, isAdmin, updateOverdueBookings]);
+
   return {
     bookings,
     loading: loading || authLoading, // Consider hook loading if auth is loading
@@ -453,5 +522,7 @@ export const useAdminBookings = (): UseBookingsReturn => {
     canViewPersonal: !authLoading,
     canUpdate,
     canDelete,
+    updateOverdueBookings,
   };
 };
+

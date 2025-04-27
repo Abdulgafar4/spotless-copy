@@ -66,6 +66,7 @@ import { AssignRoleDialog } from "./assign-role"
 import { useAdminEmployees } from "@/hooks/use-employees"
 import { useAdminBranches } from "@/hooks/use-branch"
 import emailjs from '@emailjs/browser';
+import { toast } from "sonner"
 
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -134,7 +135,7 @@ export default function EmployeesPage() {
     setIsDetailsDialogOpen(true)
   }
 
-  const handleAddNewEmployee = async (newEmployeeData: any) => {
+  const handleAddNewEmployee = async (newEmployeeData: any, password?: string) => {
     try {
       // Map from form structure to database structure
       const employeeToCreate = {
@@ -152,13 +153,26 @@ export default function EmployeesPage() {
         status: "active"
       };
       
-      await createEmployee(employeeToCreate);
-      setIsAddDialogOpen(false)
+      const newEmployee = await createEmployee(employeeToCreate, password);
+    
+      if (newEmployee.generatedPassword) {
+        // Show dialog with credentials
+        toast(`Employee created with password: ${newEmployee.generatedPassword}`);
+      }
+      
+      setIsAddDialogOpen(false);
     } catch (err) {
       console.error("Error adding employee:", err);
-      // Handle error - could add toast notification here
+      
+      // Show error to user
+      const errorMessage = err instanceof Error ? err.message : "Failed to create employee";
+      
+      // You could use a toast notification here
+      toast(errorMessage);
+      
+      // Keep the dialog open so they can fix the error
     }
-  }
+  };
 
   const handleUpdateStatus = (employee: any, newStatus: string) => {
     let actionTitle = "";

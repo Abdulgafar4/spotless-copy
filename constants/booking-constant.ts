@@ -7,6 +7,8 @@ export const STATUS_OPTIONS: StatusOption[] = [
     { value: "completed", label: "Completed" },
     { value: "cancelled", label: "Cancelled" },
     { value: "rejected", label: "Rejected" },
+    { value: "due", label: "Overdue" },  // Add this line
+
   ]
   
 export  const DATE_OPTIONS: StatusOption[] = [

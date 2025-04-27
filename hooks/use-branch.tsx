@@ -25,12 +25,6 @@ export const useAdminBranches = (): UseAdminBranchesReturn => {
 
   // Fetch all branches
   const fetchBranches = useCallback(async () => {
-    if (!isAdmin) {
-      setError(new Error("Unauthorized: Admin access required"));
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       const { data, error: supabaseError } = await supabase
@@ -52,7 +46,7 @@ export const useAdminBranches = (): UseAdminBranchesReturn => {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, []);
 
   // Create a new branch
   const createBranch = useCallback(
@@ -202,10 +196,8 @@ export const useAdminBranches = (): UseAdminBranchesReturn => {
 
   // Initialize by fetching branches on first load
   useEffect(() => {
-    if (isAdmin) {
       fetchBranches();
-    }
-  }, [fetchBranches, isAdmin]);
+  }, [fetchBranches]);
 
   return {
     branches,

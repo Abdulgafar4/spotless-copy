@@ -52,7 +52,7 @@ export function BookingDetailsDialog({
 
   // Helper for status badge
   const getStatusBadge = (status: string) => {
-    switch(status) {
+    switch (status) {
       case "pending":
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
       case "confirmed":
@@ -65,6 +65,8 @@ export function BookingDetailsDialog({
         return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>
       case "rejected":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>
+      case "due":   // Add this case
+        return <Badge className="bg-red-200 text-red-900">Overdue</Badge>
       default:
         return <Badge>{status}</Badge>
     }
@@ -79,13 +81,13 @@ export function BookingDetailsDialog({
             {getStatusBadge(booking.status)}
           </DialogTitle>
         </DialogHeader>
-        
+
         <Tabs defaultValue="details" className="mt-4 sm:mt-6">
           <TabsList className="grid grid-cols-2 w-full max-w-[400px] mx-auto">
             <TabsTrigger value="details">Booking Details</TabsTrigger>
             <TabsTrigger value="staff">Staff & Notes</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="details" className="mt-4 sm:mt-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 p-4 border rounded-md">
@@ -95,7 +97,7 @@ export function BookingDetailsDialog({
                   {booking.service}
                 </p>
               </div>
-              
+
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Branch</h3>
                 <p className="text-base flex items-center gap-2">
@@ -103,7 +105,7 @@ export function BookingDetailsDialog({
                   {booking.branch}
                 </p>
               </div>
-              
+
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Date</h3>
                 <p className="text-base flex items-center gap-2">
@@ -111,8 +113,8 @@ export function BookingDetailsDialog({
                   {booking.date}
                 </p>
               </div>
- 
-              
+
+
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Created On</h3>
                 <p className="text-base flex items-center gap-2">
@@ -121,7 +123,7 @@ export function BookingDetailsDialog({
                 </p>
               </div>
             </div>
-            
+
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Service Address</h3>
               <p className="text-base flex items-start gap-2">
@@ -137,14 +139,14 @@ export function BookingDetailsDialog({
                     {booking.customerName.split(' ').map((name: string) => name[0]).join('').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                
+
                 <div className="text-center sm:text-left">
                   <h3 className="text-lg font-semibold text-gray-800">{booking.customerName}</h3>
                   <div className="space-y-1 mt-1">
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-gray-600">
                       <Mail className="h-4 w-4 text-green-500" />
-                      <a 
-                        href={`mailto:${booking.customerEmail}`} 
+                      <a
+                        href={`mailto:${booking.customerEmail}`}
                         className="text-green-600 hover:underline"
                       >
                         {booking.customerEmail}
@@ -152,8 +154,8 @@ export function BookingDetailsDialog({
                     </div>
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-gray-600">
                       <Phone className="h-4 w-4 text-green-500" />
-                      <a 
-                        href={`tel:${booking.customerPhone}`} 
+                      <a
+                        href={`tel:${booking.customerPhone}`}
                         className="text-gray-700 hover:underline"
                       >
                         {booking.customerPhone}
@@ -162,8 +164,8 @@ export function BookingDetailsDialog({
                   </div>
                 </div>
               </div>
-              
-              <Button 
+
+              <Button
                 onClick={() => onMessageCustomer(booking)}
                 className="w-full mt-2 bg-green-500 hover:bg-green-600 transition-colors"
               >
@@ -171,25 +173,25 @@ export function BookingDetailsDialog({
                 Send Message to Customer
               </Button>
             </div>
-            
+
             {booking.status === "cancelled" && booking.cancellationReason && (
               <div className="space-y-2 p-4 border rounded-md border-red-200 bg-red-50">
                 <h3 className="text-sm font-medium text-red-500">Cancellation Reason</h3>
                 <p className="text-base">{booking.cancellationReason}</p>
               </div>
             )}
-            
+
             <div className="flex flex-col sm:flex-row gap-2 mt-4 justify-center">
               {booking.status === "pending" && (
                 <>
-                  <Button 
+                  <Button
                     className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
                     onClick={() => onUpdateStatus(booking, "confirmed")}
                   >
                     <CalendarCheck className="mr-2 h-4 w-4" />
                     Confirm Booking
                   </Button>
-                  <Button 
+                  <Button
                     variant="destructive"
                     className="w-full sm:w-auto"
                     onClick={() => onUpdateStatus(booking, "rejected")}
@@ -199,10 +201,10 @@ export function BookingDetailsDialog({
                   </Button>
                 </>
               )}
-              
+
               {booking.status === "confirmed" && (
                 <>
-                  <Button 
+                  <Button
                     variant="destructive"
                     className="w-full sm:w-auto"
                     onClick={() => onUpdateStatus(booking, "cancelled")}
@@ -212,9 +214,9 @@ export function BookingDetailsDialog({
                   </Button>
                 </>
               )}
-              
+
               {booking.status === "in-progress" && (
-                <Button 
+                <Button
                   className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
                   onClick={() => onUpdateStatus(booking, "completed")}
                 >
@@ -222,9 +224,9 @@ export function BookingDetailsDialog({
                   Mark Completed
                 </Button>
               )}
-              
+
               {(booking.status === "confirmed" || booking.status === "pending") && (
-                <Button 
+                <Button
                   variant="outline"
                   className="w-full sm:w-auto"
                   onClick={() => onAssignStaff(booking)}
@@ -233,9 +235,29 @@ export function BookingDetailsDialog({
                   Assign Staff
                 </Button>
               )}
+
+              {booking.status === "due" && (
+                <>
+                  <Button
+                    className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
+                    onClick={() => onUpdateStatus(booking, "confirmed")}
+                  >
+                    <CalendarCheck className="mr-2 h-4 w-4" />
+                    Confirm Late Booking
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full sm:w-auto"
+                    onClick={() => onUpdateStatus(booking, "rejected")}
+                  >
+                    <CalendarX className="mr-2 h-4 w-4" />
+                    Reject Booking
+                  </Button>
+                </>
+              )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="staff" className="mt-4 sm:mt-6 space-y-4">
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Assigned Staff</h3>
@@ -251,10 +273,10 @@ export function BookingDetailsDialog({
               ) : (
                 <p className="text-gray-500 mt-2 italic">No staff assigned yet</p>
               )}
-              
+
               {(booking.status === "confirmed" || booking.status === "pending") && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-4 w-full"
                   onClick={() => onAssignStaff(booking)}
                 >
@@ -263,7 +285,7 @@ export function BookingDetailsDialog({
                 </Button>
               )}
             </div>
-            
+
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Notes & Special Instructions</h3>
               <div className="mt-2 p-3 bg-gray-50 rounded-md min-h-[100px]">
@@ -276,7 +298,7 @@ export function BookingDetailsDialog({
             </div>
           </TabsContent>
         </Tabs>
-        
+
         <DialogFooter className="mt-4 sm:mt-6">
           <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">
             Close

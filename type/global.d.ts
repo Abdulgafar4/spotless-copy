@@ -12,6 +12,10 @@ interface Branch {
   status: BranchStatus;
   employees: number;
   opendate: string;
+  opening_time?: string;
+  closing_time?: string;
+  lunch_start?: string;
+  lunch_end?: string;
 }
 
 interface Employee {
@@ -27,6 +31,7 @@ interface Employee {
   created_at: Date;
   updated_at?: Date;
   branches?: Branch;
+  generatedPassword?: string
 }
 
 interface Customer {
@@ -83,6 +88,9 @@ interface Booking {
   amount: number;
   address: string;
   modified?: string;
+  start_time?: string;
+  end_time?: string;
+  staff_id?: string;
 }
 
 interface StatusBadge {
@@ -173,13 +181,20 @@ interface Service {
   imageUrl?: string;
 }
 
+interface TimeSlot {
+  startTime: string;
+  available: boolean;
+  label?: string;    // Optional display label
+}
+
 type BookingStatus = 
   | "pending"
   | "confirmed"
   | "in-progress"
   | "completed"
   | "cancelled"
-  | "rejected";
+  | "rejected"
+  | "due";   
 
 
 interface Review {

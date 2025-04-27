@@ -20,6 +20,7 @@ const getStatusBadge = (status: string) => {
     "completed": { bg: "bg-green-100", text: "text-green-800", label: "Completed" },
     "cancelled": { bg: "bg-gray-100", text: "text-gray-800", label: "Cancelled" },
     "rejected": { bg: "bg-red-100", text: "text-red-800", label: "Rejected" },
+    "due": { bg: "bg-red-200", text: "text-red-900", label: "Overdue" }, // Add this line
   }
 
   const statusInfo = statusColors[status] || { bg: "", text: "", label: status }

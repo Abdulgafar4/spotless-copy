@@ -18,6 +18,7 @@ export interface Appointment {
   branch: string;
   notes?: string;
   user_id: string;
+  branch_id:string;
 }
 
 interface UseClientAppointmentsReturn {
@@ -86,7 +87,8 @@ export const useClientAppointments = (): UseClientAppointmentsReturn => {
         service_type: booking.service_type,
         branch: booking.branch || "",
         notes: booking.notes,
-        user_id: booking.user_id
+        user_id: booking.user_id,
+        branch_id: booking.branch_id
       }));
 
       setAppointments(transformedAppointments);

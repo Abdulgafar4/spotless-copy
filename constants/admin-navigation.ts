@@ -55,7 +55,7 @@ export const getAdminNavigation = (pathname?: string) => [
       current: pathname === "/admin/inquiries",
     },
     {
-      name: "Staffs",
+      name: "Employees",
       href: "/admin/employees",
       icon: FileText,
       current: pathname === "/admin/employees",

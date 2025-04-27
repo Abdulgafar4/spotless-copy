@@ -32,15 +32,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2 } from "lucide-react"
+import { Loader2, Eye, EyeOff } from "lucide-react"
 import { useAdminBranches } from "@/hooks/use-branch"
 import { useAdminServices } from "@/hooks/use-service"
-import { EmployeeFormValues, employeeSchema } from "@/model/employee-schema"
+import { EmployeeFormValues, employeeSchema, validateEmployeeEmail } from "@/model/employee-schema"
+import { Label } from "@/components/ui/label"
 
 interface AddEmployeeDialogProps {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
-  onAdd: (employee: any) => void
+  onAdd: (employee: any, password?: string) => void
 }
 
 // Define available roles
@@ -49,7 +50,8 @@ const availableRoles = [
   "Team Lead",
   "Supervisor",
   "Manager",
-  "Administrator"
+  "Administrator",
+  "Admin"
 ];
 
 
@@ -62,6 +64,8 @@ export function AddEmployeeDialog({
   const { fetchBranches, branches, loading: branchesLoading } = useAdminBranches();
   const { services, loading: servicesLoading } = useAdminServices();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [useGeneratedPassword, setUseGeneratedPassword] = useState(true);
   
   // Fetch branches when component mounts or dialog opens
   useEffect(() => {
@@ -70,7 +74,7 @@ export function AddEmployeeDialog({
     }
   }, [fetchBranches, isOpen]);
 
-  const form = useForm<EmployeeFormValues>({
+  const form = useForm<EmployeeFormValues & { password?: string }>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
       firstName: "",
@@ -84,6 +88,7 @@ export function AddEmployeeDialog({
       availability: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       skills: [],
       notes: "",
+      password: "",
     },
   });
 
@@ -91,10 +96,10 @@ export function AddEmployeeDialog({
   const onSubmit = async (data: EmployeeFormValues) => {
     setIsSubmitting(true);
     try {
-      await onAdd(data);
-      form.reset();
+      await onAdd(data, useGeneratedPassword ? undefined : data.password);
     } finally {
       setIsSubmitting(false);
+      // form.reset();
     }
   };
 
@@ -159,19 +164,34 @@ export function AddEmployeeDialog({
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+  control={form.control}
+  name="email"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Email</FormLabel>
+      <FormControl>
+        <Input 
+          type="email" 
+          {...field}
+          onBlur={async (e) => {
+            field.onBlur();
+            if (e.target.value) {
+              const isValid = await validateEmployeeEmail(e.target.value);
+              if (!isValid) {
+                form.setError("email", { 
+                  type: "manual",
+                  message: "An employee with this email already exists"
+                });
+              }
+            }
+          }}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
               
               <FormField
                 control={form.control}
@@ -206,7 +226,7 @@ export function AddEmployeeDialog({
                       </FormControl>
                       <SelectContent>
                         {availableRoles.map((role) => (
-                          <SelectItem key={role} value={role}>
+                          <SelectItem key={role} value={role.toLocaleLowerCase()}>
                             {role}
                           </SelectItem>
                         ))}
@@ -419,6 +439,65 @@ export function AddEmployeeDialog({
                 </FormItem>
               )}
             />
+
+<div className="space-y-4 p-4 border rounded-md bg-gray-50">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-medium">Password Configuration</h4>
+          <p className="text-sm text-gray-500">Choose how to set the employee's password</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="use-generated"
+            checked={useGeneratedPassword}
+            onCheckedChange={(checked) => {
+              setUseGeneratedPassword(checked as boolean);
+              if (checked) {
+                form.setValue("password", "");
+              }
+            }}
+          />
+          <Label htmlFor="use-generated" className="text-sm">
+            Auto-generate secure password
+          </Label>
+        </div>
+      </div>
+      
+      {!useGeneratedPassword && (
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Custom Password</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Enter password (min. 8 characters)"
+                    {...field} 
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                  </Button>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+    </div>
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>

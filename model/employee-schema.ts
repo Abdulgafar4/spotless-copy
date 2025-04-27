@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabaseClient";
 import { z } from "zod";
 
 // Define schema for the form
@@ -13,6 +14,30 @@ export const employeeSchema = z.object({
   availability: z.array(z.string()).optional(),
   skills: z.array(z.string()).optional(),
   notes: z.string().optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
 });
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;
+
+export const validateEmployeeEmail = async (email: string) => {
+  try {
+    // Check if employee exists
+    const { data: existingEmployee } = await supabase
+      .from("employees")
+      .select("email")
+      .eq("email", email)
+      .single();
+
+    if (existingEmployee) {
+      return false;
+    }
+
+    // Check if auth user exists
+    const { data: authUsers } = await supabase.auth.admin.listUsers();
+    
+    return !authUsers?.users?.some(user => user.email === email);
+  } catch (error) {
+    // If there's an error checking, assume email is available
+    return true;
+  }
+};
