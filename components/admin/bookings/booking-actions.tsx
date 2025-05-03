@@ -28,7 +28,7 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
           label: "Reject Booking", 
           icon: X, 
           color: "text-red-500", 
-          action: () => onUpdateStatus(booking, "rejected") 
+          action: () => onUpdateStatus(booking, "cancelled") 
         }
       ],
       "confirmed": [

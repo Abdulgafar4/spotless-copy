@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { BookingDetailsDialog } from "./booking-details-dialog";
+import { useClientServices } from "@/hooks/use-client-service";
 
 interface BookingHistoryTableProps {
   bookings: Booking[];
@@ -18,6 +19,7 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
   const router = useRouter();
   
   const { rebookService } = useClientBookings();
+  const { services } = useClientServices();
   
   if (!bookings || bookings.length === 0) {
     return null;
@@ -76,6 +78,22 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
     return new Date(dateString).toLocaleTimeString('en-US', options);
   };
 
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === undefined) return "N/A";
+    
+    return new Intl.NumberFormat('en-CA', { 
+      style: 'currency', 
+      currency: 'CAD' 
+    }).format(amount);
+  };
+
+  const getServicePrice = (serviceType: string) => {
+    if (!services || !Array.isArray(services)) return null;
+    
+    const service = services.find(s => s.name === serviceType);
+    return service ? service.price : null;
+  };
+
 
   return (
     <>
@@ -95,6 +113,8 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
             const status = booking.status.toLowerCase();
             const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
 
+            const price = booking.total_amount || getServicePrice(booking.service_type);
+
             return (
               <TableRow key={booking.id} className="hover:bg-gray-50">
                 <TableCell className="font-medium">#{booking.reference_number}</TableCell>
@@ -113,13 +133,7 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  {booking.total_amount 
-                    ? new Intl.NumberFormat('en-CA', { 
-                        style: 'currency', 
-                        currency: 'CAD' 
-                      }).format(booking.total_amount)
-                    : "N/A"
-                  }
+                  {`${formatCurrency(price)}/hr`}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
