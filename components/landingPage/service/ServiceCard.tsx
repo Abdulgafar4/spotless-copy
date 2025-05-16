@@ -3,15 +3,13 @@ import React, { useState } from "react";
 import { Card } from "../../ui/card";
 import Image from "next/image";
 import { Button } from "../../ui/button";
-import { ChevronDown, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 
 interface Branch {
@@ -23,10 +21,8 @@ interface ServiceCardProps {
   title: string;
   description: string;
   image: string;
-  category: string;
   value: string;
   price: number;
-  duration?: string;
   branches: Branch[];
 }
 
@@ -34,18 +30,16 @@ const ServiceCard = ({
   title,
   description,
   image,
-  category,
   value,
   price,
-  duration = "3h - 4h",
   branches,
 }: ServiceCardProps) => {
   const [selectedBranch, setSelectedBranch] = useState<string>("");
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-CA', { 
-      style: 'currency', 
-      currency: 'CAD' 
+    return new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD'
     }).format(amount);
   };
 
@@ -58,13 +52,10 @@ const ServiceCard = ({
           layout="fill"
           objectFit="cover"
         />
-        <div className="absolute bottom-4 flex gap-4 left-10">
+        <div className="absolute bottom-4 flex justify-center w-full">
           <div className="bg-white text-black text-sm rounded-full px-4 py-2 font-medium flex items-center gap-2">
             <span>
-              Duration: <span className="text-green-500">{duration}</span>
-            </span>
-            <span>
-              Price: <span className="text-green-500">{formatCurrency(price)}</span>
+              Minimum Price: <span className="text-green-500">{formatCurrency(price)}/hr</span>
             </span>
           </div>
         </div>
@@ -80,14 +71,14 @@ const ServiceCard = ({
             onValueChange={setSelectedBranch}
           >
             <SelectTrigger className="flex justify-between border rounded-md p-1  flex-1">
-            <MapPin className="h-4 w-4" />
+              <MapPin className="h-4 w-4" />
               <span>
-                
+
                 {selectedBranch
                   ? branches.find((b) => b.name === selectedBranch)?.name
                   : "Location"}
               </span>
-  
+
             </SelectTrigger>
             <SelectContent>
               {branches.map((branch) => (
@@ -105,7 +96,7 @@ const ServiceCard = ({
             <Link
               href={{
                 pathname: "/booking",
-                query: { 
+                query: {
                   service: value,
                   branch: selectedBranch
                 }

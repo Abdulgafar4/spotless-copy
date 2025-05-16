@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -59,7 +58,6 @@ export function AddServiceDialog({
     defaultValues: {
       name: "",
       description: "",
-      duration: "60",
       price: '0',
       category: "",
       status: "active",
@@ -74,7 +72,6 @@ export function AddServiceDialog({
       form.reset({
         name: service.name,
         description: service.description,
-        duration: service.duration,
         price: service.price,
         category: service.category,
         status: service.status,
@@ -85,7 +82,6 @@ export function AddServiceDialog({
       form.reset({
         name: "",
         description: "",
-        duration: "60",
         price: '0',
         category: "",
         status: "active",
@@ -99,7 +95,7 @@ export function AddServiceDialog({
   const handleImageUpload = async (file: File): Promise<string> => {
     setIsUploading(true)
     setUploadError(null)
-    
+
     try {
       const imageUrl = await uploadServiceImage(file)
       return imageUrl
@@ -127,24 +123,24 @@ export function AddServiceDialog({
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Service" : "Add New Service"}</DialogTitle>
           <DialogDescription>
-            {isEditMode 
+            {isEditMode
               ? "Update the service information below."
               : "Fill in the details to create a new service offering."
             }
           </DialogDescription>
         </DialogHeader>
-        
+
         {uploadError && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <strong className="font-bold">Error:</strong>
             <span className="block sm:inline"> {uploadError}</span>
           </div>
         )}
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        {/* Image Upload Field */}
-                        <FormField
+            {/* Image Upload Field */}
+            <FormField
               control={form.control}
               name="imageUrl"
               render={({ field }) => (
@@ -181,10 +177,10 @@ export function AddServiceDialog({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Detailed description of the service" 
+                    <Textarea
+                      placeholder="Detailed description of the service"
                       className="min-h-[100px]"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -192,31 +188,25 @@ export function AddServiceDialog({
               )}
             />
             <div className="grid grid-cols-2 gap-4">
+
               <FormField
                 control={form.control}
-                name="duration"
+                name="staffRequired"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration (minutes)</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="30">30 min</SelectItem>
-                        <SelectItem value="60">60 min</SelectItem>
-                        <SelectItem value="90">90 min</SelectItem>
-                        <SelectItem value="120">120 min</SelectItem>
-                        <SelectItem value="180">180 min</SelectItem>
-                        <SelectItem value="240">240 min</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Staff Required</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="Number of staff needed"
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value === "" ? '' : parseInt(value, 10));
+                        }}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -228,7 +218,7 @@ export function AddServiceDialog({
                   <FormItem>
                     <FormLabel>Price ($)</FormLabel>
                     <FormControl>
-                      <Input 
+                      <Input
                         type="number"
                         min="0"
                         step="0.01"
@@ -252,8 +242,8 @@ export function AddServiceDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       value={field.value}
                     >
@@ -280,8 +270,8 @@ export function AddServiceDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       value={field.value}
                     >
@@ -301,39 +291,18 @@ export function AddServiceDialog({
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="staffRequired"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Staff Required</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number"
-                      min="1"
-                      placeholder="Number of staff needed"
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? '' : parseInt(value, 10));
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
+
+
             <DialogFooter className="mt-6">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setIsOpen(false)}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isUploading}
               >
                 {isUploading ? "Uploading..." : isEditMode ? "Update" : "Create"}

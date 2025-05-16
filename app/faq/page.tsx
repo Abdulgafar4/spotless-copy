@@ -43,7 +43,7 @@ export default function FAQPage() {
   }, [activeTab, searchTerm])
 
   return (
-    <div className="flex flex-col mt-10">
+    <div className="flex flex-col mt-20">
       <PageHeader
         title="FREQUENTLY ASKED QUESTIONS"
         breadcrumbs={[
@@ -161,7 +161,7 @@ export default function FAQPage() {
                 </p>
                 <div className="space-y-4">
                   <Button asChild className="w-full bg-green-500 hover:bg-green-600 text-white">
-                    <Link href="/contact-us">Contact Support</Link>
+                    <Link href="#">Contact Support</Link>
                   </Button>
 
                   <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200">

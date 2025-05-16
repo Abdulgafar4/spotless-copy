@@ -1,11 +1,10 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Mail, MapPin, Pen, Phone } from 'lucide-react';
+import { Mail, MapPin, Pen, Phone, Send, User } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/use-auth';
-
 
 // Define validation schema with Zod
 const contactSchema = z.object({
@@ -15,18 +14,6 @@ const contactSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   message: z.string().min(10, 'Message must be at least 10 characters')
 });
-
-const offices = [
-  { name: "Offices #01", phone: "00962785447043" },
-  { name: "Offices #02", phone: "00962785447043" },
-  { name: "Offices #03", phone: "00962785447043" },
-  { name: "Offices #04", phone: "00962785447043" },
-];
-
-const emails = [
-  { name: "E-Mail #1", address: "dt@ibtecar.me" },
-  { name: "E-Mail #2", address: "dt@ibtecar.me" },
-];
 
 function ContactSection() {
   // Form state
@@ -38,7 +25,8 @@ function ContactSection() {
     message: ''
   });
   
-  const {user } = useAuth()
+  const { user } = useAuth();
+  
   // Validation errors state
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -65,15 +53,14 @@ function ContactSection() {
     }
   };
   
-
   // Form validation using Zod
-  const validateForm = (): boolean => {
+  const validateForm = () => {
     try {
       contactSchema.parse(formData);
       setErrors({});
       return true;
     } catch (error) {
-      const formattedErrors: Record<string, string> = {}; // Ensure correct type
+      const formattedErrors: Record<string, string> = {};
   
       if (error instanceof z.ZodError) {
         error.errors.forEach((err) => {
@@ -104,20 +91,17 @@ function ContactSection() {
     setIsSubmitting(true);
     
     try {
-      // Create a timestamp for the submission
-      const submittedAt = new Date().toISOString();
-      
       // Insert data into Supabase 'contact_messages' table
       const { data, error } = await supabase
         .from('contact_messages')
         .insert([
           { 
-            full_name: formData.fullName,
+            name: formData.fullName,
             email: formData.email,
             phone: formData.phone || null,
             subject: formData.subject,
             message: formData.message,
-            user_id: user.id
+            user_id: user?.id
           }
         ]);
         
@@ -144,213 +128,196 @@ function ContactSection() {
   };
 
   return (
-    <section className="py-8 sm:py-12 md:py-24 bg-white" id='contact-us'>
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
-          {/* Left: Form */}
-          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4">SEND A MESSAGE</h2>
-            <p className="text-xs sm:text-sm font-medium text-gray-700 mb-4 sm:mb-6">
-              Whether you have questions about our services, want to discuss a custom
-              project, or are ready to take the next step in your Design Thinking journey.
-            </p>
-            
-            {/* Success message */}
-            {submitSuccess && (
-              <div className="bg-green-100 text-green-700 p-3 rounded-md mb-4" role="alert">
-                Your message has been sent successfully! We'll get back to you soon.
+    <section className="py-16 md:py-24 bg-gradient-to-br from-white to-gray-50" id="contact-us">
+      <div className="container mx-auto px-4 md:px-6 max-w-4xl">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3 text-gray-800">Get In Touch</h2>
+          <div className="w-20 h-1 bg-green-500 mx-auto mb-6"></div>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Whether you have questions about our services, want to discuss a custom
+            project, or are ready to take the next step in your Design Thinking journey,
+            we'd love to hear from you.
+          </p>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Success message */}
+          {submitSuccess && (
+            <div className="bg-green-50 border-l-4 border-green-500 p-6 mb-4 flex items-start" role="alert">
+              <div className="bg-green-100 rounded-full p-2 mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-            )}
-            
-            {/* Error message */}
-            {submitError && (
-              <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4" role="alert">
-                {submitError}
+              <div>
+                <h3 className="font-bold text-green-700 text-lg mb-1">Message Sent!</h3>
+                <p className="text-green-600">Thank you for reaching out. We'll get back to you as soon as possible.</p>
               </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <div className={`flex items-center gap-2 bg-gray-100 p-3 rounded-md ${errors.fullName ? 'border border-red-500' : ''}`}>
-                    <div className="text-gray-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                    </div>
-                    <input 
-                      type="text" 
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      placeholder="Full Name" 
-                      className="bg-transparent w-full outline-none text-sm" 
-                      aria-label="Full Name"
-                      aria-required="true"
-                      aria-invalid={!!errors.fullName}
-                      aria-describedby={errors.fullName ? "fullName-error" : undefined}
-                    />
-                  </div>
-                  {errors.fullName && (
-                    <p id="fullName-error" className="text-red-500 text-xs mt-1">{errors.fullName}</p>
-                  )}
-                </div>
-                
-                <div className="flex flex-col">
-                  <div className={`flex items-center gap-2 bg-gray-100 p-3 rounded-md ${errors.email ? 'border border-red-500' : ''}`}>
-                    <div className="text-gray-500">
-                      <Mail className="h-5 w-5" />
-                    </div>
-                    <input 
-                      type="email" 
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="E-Mail Address" 
-                      className="bg-transparent w-full outline-none text-sm" 
-                      aria-label="Email Address"
-                      aria-required="true"
-                      aria-invalid={!!errors.email}
-                      aria-describedby={errors.email ? "email-error" : undefined}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p id="email-error" className="text-red-500 text-xs mt-1">{errors.email}</p>
-                  )}
-                </div>
+            </div>
+          )}
+          
+          {/* Error message */}
+          {submitError && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-6 mb-4 flex items-start" role="alert">
+              <div className="bg-red-100 rounded-full p-2 mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <div className={`flex items-center gap-2 bg-gray-100 p-3 rounded-md ${errors.phone ? 'border border-red-500' : ''}`}>
-                    <div className="text-gray-500">
-                      <Phone className="h-5 w-5" />
-                    </div>
-                    <input 
-                      type="tel" 
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="Phone Number" 
-                      className="bg-transparent w-full outline-none text-sm" 
-                      aria-label="Phone Number"
-                      aria-invalid={!!errors.phone}
-                      aria-describedby={errors.phone ? "phone-error" : undefined}
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p id="phone-error" className="text-red-500 text-xs mt-1">{errors.phone}</p>
-                  )}
-                </div>
-                
-                <div className="flex flex-col">
-                  <div className={`flex items-center gap-2 bg-gray-100 p-3 rounded-md ${errors.subject ? 'border border-red-500' : ''}`}>
-                    <div className="text-gray-500">
-                      <Pen className="h-5 w-5" />
-                    </div>
-                    <input 
-                      type="text" 
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      placeholder="Subject" 
-                      className="bg-transparent w-full outline-none text-sm" 
-                      aria-label="Subject"
-                      aria-required="true"
-                      aria-invalid={!!errors.subject}
-                      aria-describedby={errors.subject ? "subject-error" : undefined}
-                    />
-                  </div>
-                  {errors.subject && (
-                    <p id="subject-error" className="text-red-500 text-xs mt-1">{errors.subject}</p>
-                  )}
-                </div>
+              <div>
+                <h3 className="font-bold text-red-700 text-lg mb-1">Oops!</h3>
+                <p className="text-red-600">{submitError}</p>
               </div>
-
-              <div className="flex flex-col">
-                <div className={`flex items-start gap-2 bg-gray-100 p-3 rounded-md ${errors.message ? 'border border-red-500' : ''}`}>
-                  <div className="text-gray-500 pt-1">
-                    <Pen className="h-5 w-5" />
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="p-6 md:p-10 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700 block mb-2" htmlFor="fullName">Full Name</label>
+                <div className={`relative rounded-lg border ${errors.fullName ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500'} overflow-hidden transition-all`}>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
                   </div>
-                  <textarea 
-                    name="message"
-                    value={formData.message}
+                  <input 
+                    type="text" 
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
                     onChange={handleChange}
-                    placeholder="Your message" 
-                    className="bg-transparent w-full outline-none min-h-24 sm:min-h-32 resize-none text-sm" 
-                    rows={4}
-                    aria-label="Message"
+                    className="block w-full pl-10 pr-3 py-3 border-0 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                    placeholder="Your name"
                     aria-required="true"
-                    aria-invalid={!!errors.message}
-                    aria-describedby={errors.message ? "message-error" : undefined}
-                  ></textarea>
+                    aria-invalid={!!errors.fullName}
+                    aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                  />
                 </div>
-                {errors.message && (
-                  <p id="message-error" className="text-red-500 text-xs mt-1">{errors.message}</p>
+                {errors.fullName && (
+                  <p id="fullName-error" className="mt-1 text-sm text-red-600">{errors.fullName}</p>
                 )}
               </div>
+              
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700 block mb-2" htmlFor="email">Email Address</label>
+                <div className={`relative rounded-lg border ${errors.email ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500'} overflow-hidden transition-all`}>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input 
+                    type="email" 
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-3 border-0 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                    placeholder="your.email@example.com"
+                    aria-required="true"
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                  />
+                </div>
+                {errors.email && (
+                  <p id="email-error" className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
+              </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700 block mb-2" htmlFor="phone">Phone Number <span className="text-gray-400">(Optional)</span></label>
+                <div className={`relative rounded-lg border ${errors.phone ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500'} overflow-hidden transition-all`}>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input 
+                    type="tel" 
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-3 border-0 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                    placeholder="+1 (123) 456-7890"
+                    aria-invalid={!!errors.phone}
+                    aria-describedby={errors.phone ? "phone-error" : undefined}
+                  />
+                </div>
+                {errors.phone && (
+                  <p id="phone-error" className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                )}
+              </div>
+              
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700 block mb-2" htmlFor="subject">Subject</label>
+                <div className={`relative rounded-lg border ${errors.subject ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500'} overflow-hidden transition-all`}>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Pen className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input 
+                    type="text" 
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-3 border-0 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                    placeholder="What is this regarding?"
+                    aria-required="true"
+                    aria-invalid={!!errors.subject}
+                    aria-describedby={errors.subject ? "subject-error" : undefined}
+                  />
+                </div>
+                {errors.subject && (
+                  <p id="subject-error" className="mt-1 text-sm text-red-600">{errors.subject}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 block mb-2" htmlFor="message">Your Message</label>
+              <div className={`relative rounded-lg border ${errors.message ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500'} overflow-hidden transition-all`}>
+                <div className="absolute top-3 left-3 flex items-start pointer-events-none">
+                  <Pen className="h-5 w-5 text-gray-400" />
+                </div>
+                <textarea 
+                  id="message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  rows={5}
+                  className="block w-full pl-10 pr-3 py-3 border-0 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                  placeholder="Please provide details about your inquiry..."
+                  aria-required="true"
+                  aria-invalid={!!errors.message}
+                  aria-describedby={errors.message ? "message-error" : undefined}
+                ></textarea>
+              </div>
+              {errors.message && (
+                <p id="message-error" className="mt-1 text-sm text-red-600">{errors.message}</p>
+              )}
+            </div>
+
+            <div className="pt-4">
               <button 
                 type="submit" 
-                className="bg-green-500 text-white py-2 sm:py-3 px-4 sm:px-6 rounded-md font-medium w-auto inline-block text-sm sm:text-base disabled:opacity-70"
+                className="w-full md:w-auto flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 disabled={isSubmitting}
                 aria-label="Send Message"
               >
-                {isSubmitting ? 'SENDING...' : 'SEND MESSAGE'}
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Message <Send className="ml-2 h-5 w-5" />
+                  </>
+                )}
               </button>
-            </form>
-          </div>
-
-          {/* Right: Contact Info */}
-          <div className="bg-gray-100 p-4 sm:p-6 rounded-lg mt-6 lg:mt-0">
-            {/* Address */}
-            <div className="flex items-start gap-3 sm:gap-4 mb-6 sm:mb-8">
-              <div className="bg-green-500 text-white p-2 sm:p-3 rounded-full flex-shrink-0">
-                <MapPin className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
-              </div>
-              <div>
-                <h3 className="font-bold text-base sm:text-lg">Visit US in</h3>
-                <address className="text-gray-700 text-xs sm:text-sm not-italic">
-                  305 Wasfi Al-Tal, 2nd Floor, Office 4, Khalda, Amman, Jordan
-                </address>
-              </div>
             </div>
-
-            {/* Offices */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {offices.map((office, index) => (
-                <div key={index} className="flex items-start gap-3 sm:gap-4">
-                  <div className="bg-green-500 text-white p-2 sm:p-3 rounded-full flex-shrink-0">
-                    <Phone className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-base sm:text-lg">{office.name}</div>
-                    <a href={`tel:${office.phone}`} className="text-gray-700 text-xs sm:text-sm hover:underline">
-                      {office.phone}
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Emails */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              {emails.map((email, index) => (
-                <div key={index} className="flex items-start gap-3 sm:gap-4">
-                  <div className="bg-green-500 text-white p-2 sm:p-3 rounded-full flex-shrink-0">
-                    <Mail className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-base sm:text-lg">{email.name}</div>
-                    <a href={`mailto:${email.address}`} className="text-gray-700 text-xs sm:text-sm break-words hover:underline">
-                      {email.address}
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          </form>
         </div>
       </div>
     </section>

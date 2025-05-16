@@ -10,7 +10,6 @@ export interface Service {
   name: string;
   description: string;
   price: number;
-  duration: number;
   imageUrl?: string;
   category?: string;
   is_active: boolean;
@@ -30,11 +29,11 @@ export interface Branch {
 
 export interface BookingData {
   service: string;
-  city: string;
   address: string;
   postalCode: string;
   branch: string;
   date: string | Date;
+  images?: File[];
 }
 
 interface UseClientServicesReturn {
@@ -105,6 +104,35 @@ export const useClientServices = (): UseClientServicesReturn => {
     }
   }, []);
 
+  // Helper function to upload images
+  const uploadImages = async (images: File[], bookingRef: string): Promise<string[]> => {
+    if (!images || images.length === 0) return [];
+    
+    const uploadPromises = images.map(async (image, index) => {
+      const fileExt = image.name.split('.').pop();
+      const fileName = `${bookingRef}-image-${index}.${fileExt}`;
+      const filePath = `booking-images/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('bookings')
+        .upload(filePath, image);
+        
+      if (uploadError) {
+        console.error(`Error uploading image ${fileName}:`, uploadError);
+        throw uploadError;
+      }
+      
+      // Get public URL for the uploaded image
+      const { data: urlData } = supabase.storage
+        .from('bookings')
+        .getPublicUrl(filePath);
+        
+      return urlData.publicUrl;
+    });
+    
+    return Promise.all(uploadPromises);
+  };
+
   // Submit a booking
   const submitBooking = useCallback(async (bookingData: BookingData): Promise<boolean> => {
     try {
@@ -134,6 +162,24 @@ export const useClientServices = (): UseClientServicesReturn => {
         existingBookings?.map(booking => booking.reference_number) || []
       );
       
+      // Upload images if any
+      let imageUrls: string[] = [];
+      if (bookingData.images && bookingData.images.length > 0) {
+        try {
+          imageUrls = await uploadImages(bookingData.images, bookingRef);
+        } catch (uploadError) {
+          console.error("Error uploading images:", uploadError);
+          // Continue with booking creation even if image upload fails
+        }
+      }
+      
+      // Get city from the selected branch
+      let city = "";
+      const selectedBranch = branches.find(branch => branch.id === bookingData.branch);
+      if (selectedBranch) {
+        city = selectedBranch.city;
+      }
+      
       // Create booking in database with a UUID id and our custom reference_number
       const { data, error: bookingError } = await supabase
         .from("bookings")
@@ -146,10 +192,11 @@ export const useClientServices = (): UseClientServicesReturn => {
             user_id: userData.user?.id,
             address: bookingData.address,
             postal_code: bookingData.postalCode,
-            city: bookingData.city,
+            city: city, // Use city from the selected branch
             branch_id: bookingData.branch,
             status: "pending",
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            images: imageUrls.length > 0 ? imageUrls : null, // Add the image URLs to the database
           }
         ])
         .select();
@@ -170,7 +217,7 @@ export const useClientServices = (): UseClientServicesReturn => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [branches]);
 
   // Initialize by fetching data on component mount
   useEffect(() => {

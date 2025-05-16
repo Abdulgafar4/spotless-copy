@@ -5,6 +5,7 @@ import {
   Clock, 
   Calendar, 
   AlertTriangle,
+  InfoIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ interface CancellationRequest {
   reason: string;
   status: string;
   created_at: string;
+  fee_percentage?: number;
   appointment?: Appointment;
 }
 
@@ -90,6 +92,7 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
           const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
           const StatusIcon = config.icon;
           const appointment = request.appointment;
+          const hasFee = request.fee_percentage && request.fee_percentage > 0;
 
           return (
             <Card key={request.id} className="overflow-hidden">
@@ -116,13 +119,20 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
                         <Calendar className="h-4 w-4 text-gray-500" />
                         <span>{formatShortDate(appointment.date)}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <span>{formatTime(appointment.date)}</span>
-                      </div>
+                      
                     <div className="text-sm text-gray-700 line-clamp-2">
                       <span className="font-medium">Reason:</span> {request.reason}
                     </div>
+                    
+                    {/* Display fee information if applicable */}
+                    {hasFee && (
+                      <div className="flex items-center gap-2 mt-1 py-2 px-3 bg-amber-50 rounded-md border border-amber-200">
+                        <InfoIcon className="h-4 w-4 text-amber-600" />
+                        <span className="text-sm text-amber-800">
+                          <span className="font-medium">Cancellation Fee:</span> {request.fee_percentage}% of service cost
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center p-4 bg-gray-50 rounded-md">
@@ -133,154 +143,32 @@ export function CancellationHistory({ requests }: CancellationHistoryProps) {
               </CardContent>
               
               <CardFooter className="border-t bg-gray-50 px-6 py-3">
-                <Button
-                  variant="outline"
-                  className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-                  onClick={() => {
-                    toast.info("Feature not implemented: Cancel request");
-                    setIsDetailsOpen(false);
-                  }}
-                >
-                  Cancel Request
-                </Button>
+                {status === "pending" ? (
+                  <Button
+                    variant="outline"
+                    className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                    onClick={() => {
+                      toast.info("This feature will be available soon");
+                    }}
+                  >
+                    Cancel Request
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="text-gray-600 hover:bg-gray-100 border-gray-200"
+                    onClick={() => {
+                      toast.info("Feature not implemented: View details");
+                    }}
+                  >
+                    View Details
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           );
         })}
       </div>
-
-      {/* {selectedRequest && (
-        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Cancellation Request Details
-              </DialogTitle>
-              <DialogDescription>
-                Request #{selectedRequest.id}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-5 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium">Status:</h3>
-                  <Badge 
-                    className={
-                      statusConfig[selectedRequest.status.toLowerCase() as keyof typeof statusConfig]?.className || 
-                      "bg-gray-100 text-gray-800"
-                    }
-                  >
-                    {statusConfig[selectedRequest.status.toLowerCase() as keyof typeof statusConfig]?.label || 
-                    selectedRequest.status}
-                  </Badge>
-                </div>
-                <span className="text-sm text-gray-500">
-                  Submitted on {formatLongDate(selectedRequest.created_at)}
-                </span>
-              </div>
-              
-              {selectedRequest.appointment && (
-                <Card className="border-blue-100">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Appointment Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 pt-0">
-                    <h3 className="font-medium">{selectedRequest.appointment.service_type}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-blue-500" />
-                        <span>{formatShortDate(selectedRequest.appointment.date)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-blue-500" />
-                        <span>{selectedRequest.appointment.time}</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-sm sm:col-span-2">
-                        <MapPin className="h-4 w-4 text-blue-500 mt-0.5" />
-                        <span>{selectedRequest.appointment.address}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Building className="h-4 w-4 text-blue-500" />
-                        <span>{selectedRequest.appointment.branch}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">Appointment ID:</span>
-                        <span>{selectedRequest.appointment.id}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 mb-1">Cancellation Reason</h4>
-                <div className="p-3 bg-gray-50 rounded-md border">
-                  <p>{selectedRequest.reason}</p>
-                </div>
-              </div>
-              
-              <div className={`p-3 rounded-md border ${
-                selectedRequest.status.toLowerCase() === "approved" ? "bg-green-50 border-green-200" : 
-                selectedRequest.status.toLowerCase() === "denied" ? "bg-red-50 border-red-200" : 
-                "bg-yellow-50 border-yellow-200"
-              }`}>
-                <div className="flex items-start gap-2">
-                  {React.createElement(
-                    statusConfig[selectedRequest.status.toLowerCase() as keyof typeof statusConfig]?.icon || AlertTriangle, 
-                    { className: `h-5 w-5 ${
-                      selectedRequest.status.toLowerCase() === "approved" ? "text-green-500" : 
-                      selectedRequest.status.toLowerCase() === "denied" ? "text-red-500" : 
-                      "text-yellow-500"
-                    } mt-0.5` }
-                  )}
-                  <div>
-                    <h4 className={`font-medium ${
-                      selectedRequest.status.toLowerCase() === "approved" ? "text-green-800" : 
-                      selectedRequest.status.toLowerCase() === "denied" ? "text-red-800" : 
-                      "text-yellow-800"
-                    }`}>
-                      {statusConfig[selectedRequest.status.toLowerCase() as keyof typeof statusConfig]?.label || 
-                      selectedRequest.status}
-                    </h4>
-                    <p className={`text-sm mt-1 ${
-                      selectedRequest.status.toLowerCase() === "approved" ? "text-green-700" : 
-                      selectedRequest.status.toLowerCase() === "denied" ? "text-red-700" : 
-                      "text-yellow-700"
-                    }`}>
-                      {statusConfig[selectedRequest.status.toLowerCase() as keyof typeof statusConfig]?.description || 
-                      "Status information not available."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsDetailsOpen(false)}
-              >
-                Close
-              </Button>
-              {selectedRequest.status.toLowerCase() === "pending" && (
-                <Button
-                  variant="outline"
-                  className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-                  onClick={() => {
-                    // In a real implementation, this would call a function to cancel the request
-                    toast.info("Feature not implemented: Cancel request");
-                    setIsDetailsOpen(false);
-                  }}
-                >
-                  Cancel Request
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )} */}
     </>
   );
 }

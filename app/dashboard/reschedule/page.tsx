@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useClientAppointments, Appointment } from "@/hooks/use-client-appointments";
-import { useTimeSlots } from "@/hooks/use-time-slots";
 import { supabase } from "@/lib/supabaseClient";
 import { RescheduleRequestForm } from "@/components/dashboard/reschedule/reschedule-form";
 import { RescheduleHistory } from "@/components/dashboard/reschedule/reschedule-history";
@@ -26,7 +25,6 @@ interface RescheduleRequest {
 export default function ReschedulePage() {
   const { user } = useAuth();
   const { appointments, requestReschedule } = useClientAppointments();
-  const { timeSlots, loading: timeSlotsLoading, fetchTimeSlots } = useTimeSlots();
   const [rescheduleRequests, setRescheduleRequests] = useState<RescheduleRequest[]>([]);
   const [activeTab, setActiveTab] = useState("request");
   const [loading, setLoading] = useState(true);
@@ -69,17 +67,6 @@ export default function ReschedulePage() {
       fetchRescheduleRequests();
     }
   }, [user, fetchRescheduleRequests]);
-
-  // Fetch time slots when appointment and date are selected
-  useEffect(() => {
-    if (selectedAppointment && selectedDate) {
-      fetchTimeSlots(
-        selectedDate, 
-        selectedAppointment.branch_id, 
-        selectedAppointment.service_type
-      );
-    }
-  }, [selectedAppointment, selectedDate, fetchTimeSlots]);
 
   // Handle appointment selection
   const handleAppointmentSelect = (appointmentId: string) => {
@@ -132,20 +119,13 @@ export default function ReschedulePage() {
             {reschedulableAppointments.length > 0 ? (
               <div className="space-y-4">
                 {/* Show loading indicator when fetching time slots */}
-                {timeSlotsLoading && (
-                  <div className="flex items-center justify-center p-4 border rounded-lg bg-gray-50">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    <span>Loading available time slots...</span>
-                  </div>
-                )}
+
                 
                 <RescheduleRequestForm 
                   appointments={reschedulableAppointments} 
-                  timeSlots={timeSlots.map(slot => slot.startTime)}
                   onSubmit={handleRescheduleRequest}
                   onAppointmentSelect={handleAppointmentSelect}
                   onDateSelect={handleDateSelect}
-                  loading={timeSlotsLoading}
                 />
               </div>
             ) : (

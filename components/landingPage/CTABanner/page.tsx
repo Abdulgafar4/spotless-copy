@@ -5,7 +5,7 @@ import Link from "next/link";
 
 function CTABanner() {
   return (
-    <div className="container mx-auto px-4 md:px-6 mt-24 ">
+    <div className="container mx-auto px-4 md:px-6 pt-8" id="why-us">
       <section className="bg-green-100 py-28 relative rounded-xl mt-10 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
           <div className="space-y-8 pl-16">

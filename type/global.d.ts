@@ -171,7 +171,6 @@ interface Service {
   id: any;
   name: string;
   description: string;
-  duration: string;
   price: string;
   category: string;
   status: ServiceStatus;

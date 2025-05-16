@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Clock, CalendarClock, MapPin, Building } from "lucide-react";
+import { Clock, CalendarClock, MapPin, Building, Upload } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/dashboard-layout";
 import { usePathname } from "next/navigation";
 import { AppointmentCard } from "@/components/dashboard/overview/AppointmentCard";
@@ -20,20 +20,20 @@ import { useClientBookings } from "@/hooks/use-client-bookings";
 
 interface BookingData {
   service: string;
-  city: string;
   address: string;
   postalCode: string;
   branch: string;
   date: string;
+  images: File[];
 }
 
 interface ErrorData {
   service?: string;
-  city?: string;
   address?: string;
   postalCode?: string;
   branch?: string;
   date?: string;
+  images?: string;
 }
 
 interface Booking {
@@ -45,11 +45,11 @@ interface Booking {
 
 const bookingSchema = z.object({
   service: z.string().nonempty("Service is required"),
-  city: z.string().nonempty("City is required"),
   address: z.string().nonempty("Address is required"),
   postalCode: z.string().nonempty("Postal code is required"),
   branch: z.string().nonempty("Nearest branch is required"),
   date: z.string().nonempty("Date is required"),
+  images: z.array(z.instanceof(File)).optional(),
 });
 
 export default function DashboardPage() {
@@ -57,17 +57,15 @@ export default function DashboardPage() {
   const router = useRouter();
   const { appointments, loading } = useClientAppointments();
   const { services, branches, submitBooking, loading: servicesLoading } = useClientServices();
-    const {
-      paginatedBookings,
-    } = useClientBookings(10); 
+  const { paginatedBookings } = useClientBookings(10); 
   
   const [bookingData, setBookingData] = useState<BookingData>({
     service: "",
-    city: "",
     address: "",
     postalCode: "",
     branch: "",
     date: "",
+    images: [],
   });
   const [errors, setErrors] = useState<ErrorData>({});
   const [submitting, setSubmitting] = useState(false);
@@ -76,6 +74,24 @@ export default function DashboardPage() {
   const handleInputChange = (field: keyof BookingData, value: string) => {
     setBookingData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newImages = Array.from(e.target.files);
+      setBookingData((prev) => ({ 
+        ...prev, 
+        images: [...prev.images, ...newImages] 
+      }));
+      setErrors((prev) => ({ ...prev, images: "" }));
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setBookingData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -103,17 +119,19 @@ export default function DashboardPage() {
     setSubmitting(true);
     try {
       // Submit booking using client services hook
-      const success = await submitBooking(bookingData);
+      const success = await submitBooking({
+        ...bookingData
+      });
       if (success) {
         toast.success("Booking submitted successfully!");
         // Reset form
         setBookingData({
           service: "",
-          city: "",
           address: "",
           postalCode: "",
           branch: "",
           date: "",
+          images: [],
         });
         // Redirect to appointments page
         router.push("/dashboard/appointments");
@@ -143,8 +161,8 @@ export default function DashboardPage() {
     }),
     time: new Date(apt.date).toLocaleTimeString('en-US', {
       hour: 'numeric', 
-          minute: 'numeric',
-          hour12: true
+      minute: 'numeric',
+      hour12: true
     }),
   }));
 
@@ -221,14 +239,6 @@ export default function DashboardPage() {
               error={errors.service}
             />
 
-            <FormSelectWithIcon
-              icon={<MapPin className="h-5 w-5" />}
-              placeholder="Select City"
-              options={branchOptions}
-              onChange={(value: any) => handleInputChange("city", value)}
-              error={errors.city}
-            />
-
             <InputWithIcon
               icon={<MapPin className="h-5 w-5" />}
               placeholder="Address Street"
@@ -251,8 +261,71 @@ export default function DashboardPage() {
               error={errors.branch}
             />
 
-            <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white">
-              BOOK NOW
+            {/* Image Upload Section */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Upload Photos (Optional)
+              </label>
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, or JPEG (MAX. 5MB)
+                    </p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*" 
+                    multiple 
+                    onChange={handleImageUpload} 
+                  />
+                </label>
+              </div>
+              {errors.images && (
+                <p className="text-sm text-red-500">{errors.images}</p>
+              )}
+              
+              {/* Preview uploaded images */}
+              {bookingData.images.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Uploaded Images ({bookingData.images.length})
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {bookingData.images.map((file, index) => (
+                      <div key={index} className="relative group">
+                        <div className="h-20 w-full rounded-md overflow-hidden border border-gray-200">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Upload ${index + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-green-500 hover:bg-green-600 text-white"
+              disabled={submitting}
+            >
+              {submitting ? "SUBMITTING..." : "BOOK NOW"}
             </Button>
           </div>
           <CalendarComponent 

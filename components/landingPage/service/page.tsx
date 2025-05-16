@@ -34,10 +34,8 @@ function Service() {
         title: service.name,
         description: service.description,
         image: service.imageUrl || "/placeholder.svg",
-        category: service.category || "Service",
         value: serviceMapping[service.name] || service.id, // Use mapping or fallback to id
         price: service.price,
-        duration: "3h - 4h", // default duration
         service_code: serviceMapping[service.name] || service.id
       }));
       setDisplayedServices(mappedServices); // Show only 7 services
@@ -53,7 +51,7 @@ function Service() {
   }
 
   return (
-    <section className="py-24" id="services">
+    <section className="pt-24" id="services">
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
           <div>
@@ -83,10 +81,8 @@ function Service() {
               title={service.title}
               description={service.description}
               image={service.image}
-              category={service.category}
               value={service.title}
               price={service.price}
-              duration={service.duration}
               branches={branches}
             />
           ))}

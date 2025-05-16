@@ -14,7 +14,7 @@ const StatCard = ({ value, label, className = '' }: { value: string, label: stri
 
 function WhyUs() {
   return (
-<section className="py-8 sm:py-12 md:py-16 mt-6 sm:mt-10">
+<section className="py-8 sm:py-12 md:py-16 mt-6 sm:mt-10" >
   <div className="container mx-auto px-4 md:px-6">
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
       <div className="space-y-4 sm:space-y-6">

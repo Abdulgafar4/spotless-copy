@@ -172,12 +172,6 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
         <TableHead>Image</TableHead>
         <TableHead>Service Name</TableHead>
         <TableHead className="hidden lg:table-cell">Description</TableHead>
-        <TableHead className="hidden sm:table-cell">
-          <div className="flex items-center">
-            <Clock className="mr-1 h-4 w-4" />
-            Duration
-          </div>
-        </TableHead>
         <TableHead className="hidden md:table-cell">
           <div className="flex items-center">
             <DollarSign className="mr-1 h-4 w-4" />
@@ -216,9 +210,6 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
           <TableCell className="font-medium whitespace-nowrap">{service.name.toLocaleUpperCase()}</TableCell>
           <TableCell className="hidden lg:table-cell">
             <div className="max-w-xs truncate">{service.description}</div>
-          </TableCell>
-          <TableCell className="hidden sm:table-cell">
-            {service.duration} min
           </TableCell>
           <TableCell className="hidden md:table-cell">
             {formatPrice(Number(service.price))}

@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Menu, X } from "lucide-react";
+import { User, Menu, X, LogIn, UserPlus, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ export default function Header() {
   const navLinks = [
     { href: "/", label: "HOME" },
     { href: "/#services", label: "SERVICES" },
-    { href: "/#contact-us", label: "OUR LOCATIONS" },
+    { href: "/#why-us", label: "WHY US" },
     { href: "/#contact-us", label: "CONTACT US" },
     { href: "/faq", label: "F.A.Qs" },
   ];
@@ -66,9 +66,8 @@ export default function Header() {
 
   return (
     <header
-      className={`bg-white border-b fixed top-0 left-0 right-0 z-20 w-full transition-all duration-300 ${
-        scrolled ? "shadow-md py-2" : "py-4"
-      }`}
+      className={`bg-white border-b fixed top-0 left-0 right-0 z-20 w-full transition-all duration-300 ${scrolled ? "shadow-md py-2" : "py-4"
+        }`}
     >
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between">
@@ -118,7 +117,7 @@ export default function Header() {
           </nav>
 
           {/* Right side buttons/dropdown */}
-          <div className="flex items-center gap-2 md:gap-4 z-20">
+          <div className="flex items-center gap-2 md:gap-8 z-20">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -127,14 +126,30 @@ export default function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 {user ? (
-                  <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="flex items-center justify-between text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                  >
+                    <span>Logout</span>
+                    <LogOut className="h-4 w-4 mr-3" />
+
+                  </DropdownMenuItem>
                 ) : (
                   <>
-                    <DropdownMenuItem asChild>
-                      <Link href="/login">Login</Link>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/login" className="flex items-center justify-between">
+                        <span>Login</span>
+                        <LogIn className="h-4 w-4 mr-3 " />
+
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/signup">Sign Up</Link>
+
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/signup" className="flex items-center justify-between">
+                        <span>Sign Up</span>
+                        <UserPlus className="h-4 w-4 mr-3 " />
+
+                      </Link>
                     </DropdownMenuItem>
                   </>
                 )}
@@ -168,9 +183,8 @@ export default function Header() {
 
           {/* Mobile Navigation Menu */}
           <div
-            className={`fixed top-0 right-0 bottom-0 w-3/4 sm:w-2/5 bg-white z-10 pt-20 px-6 flex flex-col border-l shadow-lg transition-transform duration-300 ease-in-out ${
-              mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-            } lg:hidden`}
+            className={`fixed top-0 right-0 bottom-0 w-3/4 sm:w-2/5 bg-white z-10 pt-20 px-6 flex flex-col border-l shadow-lg transition-transform duration-300 ease-in-out ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+              } lg:hidden`}
           >
             <nav className="flex flex-col gap-6 items-start">
               {!user ? (
