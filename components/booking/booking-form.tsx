@@ -303,7 +303,7 @@ export function MainBookingForm() {
         reference_number: bookingRef,
         postal_code: data.postalCode,
         branch_id: data.branch,
-        status: "pending", // Will be set to confirmed since payment will be processed
+        status: "confirmed", // Will be set to confirmed since payment will be processed
         payment_status: "paid",
         payment_option: data.paymentOption,
         total_amount: totalPrice,
