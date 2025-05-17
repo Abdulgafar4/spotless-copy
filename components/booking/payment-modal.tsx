@@ -23,8 +23,8 @@ interface PaymentModalProps {
   formatCurrency: (amount: number) => string;
   paymentOption: "full" | "deposit";
   totalAmount: number;
-  bookingData: any; // Booking data to be inserted after payment
-  files: File[]; // Files to upload after successful payment
+  bookingData: any; 
+  files: File[]; 
 }
 
 export function PaymentModal({
@@ -44,39 +44,39 @@ export function PaymentModal({
   const handlePayment = async () => {
     // Simulate payment processing with Stripe
     setIsProcessing(true)
-    
+
     try {
       // Simulate payment processing delay
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
       // After successful payment, create the booking record
       const { data: bookingResult, error: bookingError } = await supabase
         .from("bookings")
         .insert([bookingData])
-        
+
       if (bookingError) {
         throw bookingError
       }
-      
+
       // Upload property photos
       if (files.length > 0) {
         const uploadPromises = files.map(file => {
           const path = `${bookingRef}/${file.name}`
-          return supabase.storage.from("booking_images").upload(path, file)
+          return supabase.storage.from("bookings").upload("booking_images/" + path, file)
         })
-        
+
         const uploadResults = await Promise.all(uploadPromises)
         const uploadErrors = uploadResults
           .filter(result => result.error)
           .map(result => result.error)
-        
+
         if (uploadErrors.length > 0) {
           console.error("Some files failed to upload:", uploadErrors)
           // Continue anyway - booking is more important than photos
         }
       }
-      
-      toast.success("Payment successful! Your booking is confirmed.")
+
+      toast.success("Payment successful! Your booking will be confirm.")
       router.push("/dashboard/booking-history")
       onClose()
     } catch (error) {
@@ -107,8 +107,8 @@ export function PaymentModal({
               <span className="text-xl font-bold">{formatCurrency(paymentAmount)}</span>
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {paymentOption === "deposit" 
-                ? `Deposit only (remaining balance of ${formatCurrency(totalAmount - paymentAmount)} due after service)` 
+              {paymentOption === "deposit"
+                ? `Deposit only (remaining balance of ${formatCurrency(totalAmount - paymentAmount)} due after service)`
                 : "Full payment with 5% discount applied"}
             </div>
           </div>
@@ -130,7 +130,7 @@ export function PaymentModal({
                   Please reference booking number <strong>{bookingRef}</strong> in any communication.
                 </p>
                 <p className="text-sm text-yellow-700">
-                  {paymentOption === "deposit" 
+                  {paymentOption === "deposit"
                     ? `You're paying a 70% deposit (${formatCurrency(paymentAmount)}). The remaining balance of ${formatCurrency(totalAmount - paymentAmount)} will be due after service completion.`
                     : "You're paying the full amount with a 5% discount applied."}
                 </p>

@@ -28,6 +28,7 @@ import { StepControls } from "./step-controls"
 
 // Import types
 import { bookingFormSchema, BookingFormValues, Branch, Service, PriceBreakdownItem } from "./booking-types"
+import { formatShortDate } from "@/lib/utils"
 
 // Define form steps
 const formSteps: Step[] = [
@@ -59,7 +60,7 @@ export function MainBookingForm() {
   const [bookingFormData, setBookingFormData] = useState<any>(null)
   
   // Pricing state
-  const [totalPrice, setTotalPrice] = useState<number>(0)
+  const [totalPrice, setTotalPrice] = useState<any>(0)
   const [priceBreakdown, setPriceBreakdown] = useState<PriceBreakdownItem[]>([])
   const [finalPaymentAmount, setFinalPaymentAmount] = useState<number>(0)
   
@@ -302,8 +303,8 @@ export function MainBookingForm() {
         reference_number: bookingRef,
         postal_code: data.postalCode,
         branch_id: data.branch,
-        status: "confirmed", // Will be set to confirmed since payment will be processed
-        payment_status: "paid", // Will be paid once payment is processed
+        status: "pending", // Will be set to confirmed since payment will be processed
+        payment_status: "paid",
         payment_option: data.paymentOption,
         total_amount: totalPrice,
         payment_amount: paymentAmount,
@@ -415,7 +416,7 @@ export function MainBookingForm() {
                   <div className="font-medium">{services.find(s => s.id === form.getValues("service"))?.name}</div>
                   
                   <div className="text-gray-600">Date:</div>
-                  <div className="font-medium">{form.getValues("date") ? new Date(form.getValues("date")).toLocaleDateString() : "Not selected"}</div>
+                  <div className="font-medium">{form.getValues("date") ? formatShortDate(form.getValues("date")) : "Not selected"}</div>
                   
                   <div className="text-gray-600">Address:</div>
                   <div className="font-medium">{form.getValues("street")}, {form.getValues("postalCode")}</div>
