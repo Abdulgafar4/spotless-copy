@@ -1,5 +1,5 @@
 import Image from "next/image"
-import BookingForm from "@/components/booking-form"
+import BookingForm from "@/components/booking/booking-form"
 import PageHeader from "@/components/page-header"
 
 export default function BookingPage() {

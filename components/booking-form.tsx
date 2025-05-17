@@ -21,6 +21,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form"
 import {
   Select,
@@ -38,6 +39,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
   Upload,
   User,
   Mail,
@@ -50,11 +62,23 @@ import {
   Pen,
   CreditCard,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Home,
+  BedDouble,
+  Bath,
+  Sofa,
+  DoorClosed,
+  CarFront,
+  Calculator,
+  FileUp,
+  FileX,
+  AlertCircle,
+  Percent,
+  Receipt,
 } from "lucide-react"
 import { generateUniqueBookingId } from "@/lib/booking-id-generator"
 
-// Define booking form schema
+// Enhanced booking form schema with property details
 const bookingFormSchema = z.object({
   firstName: z.string().min(2, { message: "First name is required" }),
   lastName: z.string().min(2, { message: "Last name is required" }),
@@ -67,6 +91,14 @@ const bookingFormSchema = z.object({
   branch: z.string({ required_error: "Please select a branch" }),
   date: z.string({ required_error: "Please select a date" }),
   notes: z.string().optional(),
+  // New property details fields
+  bedrooms: z.coerce.number().min(0).max(10),
+  bathrooms: z.coerce.number().min(0).max(10),
+  livingRooms: z.coerce.number().min(0).max(5),
+  garages: z.coerce.number().min(0).max(3),
+  den: z.boolean().optional().default(false),
+  // Payment option
+  paymentOption: z.enum(["full", "deposit"])
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -82,21 +114,29 @@ const cities = [
   { value: "london", label: "London" },
 ];
 
+// File type validation
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export function BookingFormContent() {
   const router = useRouter()
   const { user } = useAuth()
 
   const [files, setFiles] = useState<File[]>([])
+  const [fileErrors, setFileErrors] = useState<string[]>([])
   const [isFormSubmitting, setIsFormSubmitting] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [currentBookingId, setCurrentBookingId] = useState<string>("")
-  const [bookingAmount, setBookingAmount] = useState<number>(0)
+  const [basePrice, setBasePrice] = useState<number>(0)
+  const [totalPrice, setTotalPrice] = useState<number>(0)
+  const [priceBreakdown, setPriceBreakdown] = useState<{item: string, price: number}[]>([])
+  const [finalPaymentAmount, setFinalPaymentAmount] = useState<number>(0)
+  const [paymentMethod, setPaymentMethod] = useState<string>("bank")
 
   const [branches, setBranches] = useState<Branch[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [servicesLoading, setServicesLoading] = useState(true)
   const searchParams = useSearchParams()
-
 
   const serviceParam = searchParams.get("service");
   const branchParam = searchParams.get("branch");
@@ -115,11 +155,14 @@ export function BookingFormContent() {
       branch: branchParam || "",
       date: "",
       notes: "",
+      bedrooms: 0,
+      bathrooms: 0,
+      livingRooms: 0,
+      garages: 0,
+      den: false,
+      paymentOption: "full"
     },
   });
-
-
-
 
   // Autofill user data
   useEffect(() => {
@@ -166,39 +209,140 @@ export function BookingFormContent() {
     fetchData();
   }, []);
 
-  // Watch service field and update booking amount
+  // Calculate total price based on form values
   useEffect(() => {
-    const subscription = form.watch((value) => {
-      if (value.service) {
-        const service = services.find(s => s.id === value.service);
-        if (service) {
-          const price = typeof service.price === 'string'
-            ? parseFloat(service.price.replace(/[^0-9.-]+/g, ""))
-            : service.price;
-          setBookingAmount(price);
-        }
+    const calculatePrice = () => {
+      const values = form.getValues();
+      const service = services.find(s => s.id === values.service);
+      
+      if (!service) {
+        setBasePrice(0);
+        setTotalPrice(0);
+        setPriceBreakdown([]);
+        return;
       }
+      
+      // Convert service price to number
+      const servicePrice = typeof service.price === 'string'
+        ? parseFloat(service.price.replace(/[^0-9.-]+/g, ""))
+        : service.price;
+      
+      setBasePrice(servicePrice);
+      
+      // Initialize price breakdown with base price
+      const breakdown = [
+        { item: `Base price (${service.name})`, price: servicePrice }
+      ];
+      
+      // Add price for additional rooms
+      const extraPricePerRoom = 20; // $20 per additional room/feature
+      
+      let additionalCost = 0;
+      
+      if (values.bedrooms > 0) {
+        const bedroomsPrice = values.bedrooms * extraPricePerRoom;
+        additionalCost += bedroomsPrice;
+        breakdown.push({ item: `${values.bedrooms} Bedroom${values.bedrooms > 1 ? 's' : ''}`, price: bedroomsPrice });
+      }
+      
+      if (values.bathrooms > 0) {
+        const bathroomsPrice = values.bathrooms * extraPricePerRoom;
+        additionalCost += bathroomsPrice;
+        breakdown.push({ item: `${values.bathrooms} Bathroom${values.bathrooms > 1 ? 's' : ''}`, price: bathroomsPrice });
+      }
+      
+      if (values.livingRooms > 0) {
+        const livingRoomsPrice = values.livingRooms * extraPricePerRoom;
+        additionalCost += livingRoomsPrice;
+        breakdown.push({ item: `${values.livingRooms} Living Room${values.livingRooms > 1 ? 's' : ''}`, price: livingRoomsPrice });
+      }
+      
+      if (values.garages > 0) {
+        const garagesPrice = values.garages * extraPricePerRoom;
+        additionalCost += garagesPrice;
+        breakdown.push({ item: `${values.garages} Garage${values.garages > 1 ? 's' : ''}`, price: garagesPrice });
+      }
+      
+      if (values.den) {
+        const denPrice = extraPricePerRoom;
+        additionalCost += denPrice;
+        breakdown.push({ item: "Den", price: denPrice });
+      }
+      
+      const subtotal = servicePrice + additionalCost;
+      
+      // Apply discount if full payment option selected
+      let finalTotal = subtotal;
+      if (values.paymentOption === "full") {
+        const discount = subtotal * 0.05; // 5% discount
+        finalTotal = subtotal - discount;
+        breakdown.push({ item: "5% Discount (Pay in Full)", price: -discount });
+      }
+      
+      setTotalPrice(finalTotal);
+      setPriceBreakdown(breakdown);
+      
+      // Set payment amount based on selected option
+      if (values.paymentOption === "deposit") {
+        setFinalPaymentAmount(250); // Fixed deposit amount
+      } else {
+        setFinalPaymentAmount(finalTotal); // Full amount with discount
+      }
+    };
+    
+    calculatePrice();
+    
+    // Subscribe to form value changes
+    const subscription = form.watch(() => {
+      calculatePrice();
     });
-
+    
     return () => subscription.unsubscribe();
-  }, [services, form]);
+  }, [form, services]);
 
-  // Helper: format currency
-
-  // File upload handler
+  // File upload validation and handler
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      if (files.length + newFiles.length <= 10) {
-        setFiles(prev => [...prev, ...newFiles]);
+      const errors: string[] = [];
+      
+      const validFiles = newFiles.filter(file => {
+        // Check file type
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+          errors.push(`"${file.name}" is not a valid image format. Please use JPG, PNG, or WebP.`);
+          return false;
+        }
+        
+        // Check file size
+        if (file.size > MAX_FILE_SIZE) {
+          errors.push(`"${file.name}" exceeds the maximum size of 5MB.`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Limit total files to 10
+      if (files.length + validFiles.length <= 10) {
+        setFiles(prev => [...prev, ...validFiles]);
       } else {
-        toast.error("Maximum 10 images allowed");
+        errors.push("Maximum 10 images allowed");
+      }
+      
+      setFileErrors(errors);
+      
+      if (errors.length > 0) {
+        errors.forEach(error => toast.error(error));
       }
     }
   };
+  
+  // Remove file from the list
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
-
-  // Form submit
+  // Form submit handler
   const onSubmit = async (data: BookingFormValues) => {
     try {
       setIsFormSubmitting(true);
@@ -223,8 +367,18 @@ export function BookingFormContent() {
         existingBookings?.map(booking => booking.reference_number) || []
       );
 
+      // Prepare property details
+      const propertyDetails = {
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        livingRooms: data.livingRooms,
+        garages: data.garages,
+        den: data.den,
+      };
 
-
+      // Determine payment status
+      const paymentAmount = data.paymentOption === "full" ? totalPrice : 250;
+      const paymentStatus = "unpaid"; // Will be updated after payment processing
 
       const { data: bookingData, error: bookingError } = await supabase
         .from("bookings")
@@ -239,8 +393,12 @@ export function BookingFormContent() {
             postal_code: data.postalCode,
             branch_id: data.branch,
             status: "pending",
-            payment_status: "unpaid",
-            total_amount: bookingAmount,
+            payment_status: paymentStatus,
+            payment_option: data.paymentOption,
+            total_amount: totalPrice,
+            payment_amount: paymentAmount,
+            property_details: propertyDetails,
+            price_breakdown: priceBreakdown,
             notes: data.notes,
             customer_name: `${data.firstName} ${data.lastName}`,
             customer_email: data.email,
@@ -261,7 +419,6 @@ export function BookingFormContent() {
           if (uploadError) console.error("Upload error", uploadError);
         }
       }
-
 
       setIsPaymentModalOpen(true);
 
@@ -479,6 +636,129 @@ export function BookingFormContent() {
             />
           </div>
 
+          <h3 className="text-lg font-semibold mb-4 mt-8">Property Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="bedrooms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Number of Bedrooms</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <BedDouble className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input 
+                        type="number" 
+                        min={0} 
+                        max={10} 
+                        {...field} 
+                        placeholder="0" 
+                        className="pl-10 h-12" 
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="bathrooms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Number of Bathrooms</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Bath className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input 
+                        type="number" 
+                        min={0} 
+                        max={10} 
+                        {...field} 
+                        placeholder="0" 
+                        className="pl-10 h-12" 
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="livingRooms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Number of Living Rooms</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Sofa className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input 
+                        type="number" 
+                        min={0} 
+                        max={5} 
+                        {...field} 
+                        placeholder="0" 
+                        className="pl-10 h-12" 
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="garages"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Number of Garages</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <CarFront className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input 
+                        type="number" 
+                        min={0} 
+                        max={3} 
+                        {...field} 
+                        placeholder="0" 
+                        className="pl-10 h-12" 
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="den"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 mt-2">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>
+                    Includes Den
+                  </FormLabel>
+                  <FormDescription>
+                    Check this if your property has a den or office space
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <h3 className="text-lg font-semibold mb-4 mt-8">Service Date</h3>
           <FormField
             control={form.control}
             name="date"
@@ -496,19 +776,67 @@ export function BookingFormContent() {
               </FormItem>
             )}
           />
-
+          
+          <h3 className="text-lg font-semibold mb-4 mt-8">Property Photos (Optional)</h3>
           <div className="space-y-4">
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <Upload className="w-12 h-12 text-gray-400 mb-2 mx-auto" />
-              <p className="text-sm text-gray-600 mb-2">Drag/Drop to Upload Media (Optional)</p>
-              <p className="text-xs text-red-400 mb-4">Maximum 10 images</p>
-              <input type="file" id="file-upload" className="hidden" multiple accept="image/*" onChange={handleFileChange} />
-              <label htmlFor="file-upload" className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-md text-sm">Select Files</label>
+              <p className="text-sm text-gray-600 mb-2">Drag/Drop to Upload Media</p>
+              <div className="flex flex-col space-y-2 text-xs text-gray-500 mb-4">
+                <p>Maximum 10 images</p>
+                <p>Accepted formats: JPG, PNG, WebP</p>
+                <p>Maximum file size: 5MB per image</p>
+              </div>
+              <input 
+                type="file" 
+                id="file-upload" 
+                className="hidden" 
+                multiple 
+                accept="image/jpeg,image/png,image/jpg,image/webp" 
+                onChange={handleFileChange} 
+              />
+              <label 
+                htmlFor="file-upload" 
+                className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-md text-sm"
+              >
+                Select Files
+              </label>
+              
               {files.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {files.map((file, index) => (
-                    <div key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">{file.name}</div>
-                  ))}
+                <div className="mt-4">
+                  <h4 className="font-medium text-sm mb-2 text-left">Selected Files:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {files.map((file, index) => (
+                      <div key={index} className="flex items-center bg-gray-100 px-2 py-1 rounded text-xs">
+                        <span className="truncate max-w-xs">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          <FileX className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {fileErrors.length > 0 && (
+                <div className="mt-4 text-left">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-start">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="text-sm font-medium text-red-800">File upload issues:</h4>
+                        <ul className="list-disc pl-5 mt-1 text-xs text-red-700 space-y-1">
+                          {fileErrors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -531,6 +859,96 @@ export function BookingFormContent() {
             />
           </div>
 
+          {/* Real-time cost estimation */}
+          <Card className="mt-8 bg-gray-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <Calculator className="h-5 w-5 mr-2" />
+                Cost Estimate
+              </CardTitle>
+              <CardDescription>
+                <div className="flex items-center text-amber-600">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Prices are subject to change after admin reviews uploaded images.
+                </div>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {priceBreakdown.map((item, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span>{item.item}</span>
+                    <span className={item.price < 0 ? "text-green-600 font-medium" : ""}>
+                      {formatCurrency(item.price)}
+                    </span>
+                  </div>
+                ))}
+                <div className="border-t border-gray-200 my-2 pt-2"></div>
+                <div className="flex justify-between font-bold">
+                  <span>Total</span>
+                  <span>{formatCurrency(totalPrice)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment options */}
+          <FormField
+            control={form.control}
+            name="paymentOption"
+            render={({ field }) => (
+              <FormItem className="mt-8">
+                <FormLabel>Payment Option</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  >
+                    <div className={`flex flex-col border rounded-lg p-4 ${field.value === "full" ? "bg-green-50 border-green-200" : ""}`}>
+                      <RadioGroupItem value="full" id="option-full" className="sr-only" />
+                      <Label
+                        htmlFor="option-full"
+                        className="flex cursor-pointer flex-col gap-1"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Percent className="h-4 w-4 text-green-600" />
+                          <span className="font-medium">Pay in Full (5% Discount)</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          Pay the entire amount now and receive a 5% discount.
+                        </div>
+                        <div className="font-medium text-green-600 mt-2">
+                          You pay: {formatCurrency(field.value === "full" ? finalPaymentAmount : totalPrice * 0.95)}
+                        </div>
+                      </Label>
+                    </div>
+
+                    <div className={`flex flex-col border rounded-lg p-4 ${field.value === "deposit" ? "bg-blue-50 border-blue-200" : ""}`}>
+                      <RadioGroupItem value="deposit" id="option-deposit" className="sr-only" />
+                      <Label
+                        htmlFor="option-deposit"
+                        className="flex cursor-pointer flex-col gap-1"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Receipt className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium">Pay Deposit Only</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          Pay a fixed deposit of $250 CAD now, and the remaining balance after service.
+                        </div>
+                        <div className="font-medium text-blue-600 mt-2">
+                          You pay now: {formatCurrency(250)}
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <Button
             type="submit"
             className="w-full bg-[#10b981] hover:bg-[#0d9668] text-white py-6 h-auto"
@@ -542,13 +960,12 @@ export function BookingFormContent() {
                 Processing...
               </>
             ) : (
-              "BOOK NOW"
+              "PROCEED TO PAYMENT"
             )}
           </Button>
         </form>
       </Form>
 
-      {/* Payment Modal */}
       {/* Payment Modal */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
@@ -558,43 +975,83 @@ export function BookingFormContent() {
               Complete Your Booking
             </DialogTitle>
             <DialogDescription>
-              Please transfer the booking amount to confirm your reservation
+              Select a payment method to complete your booking
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Amount</span>
-                <span className="text-xl font-bold">{formatCurrency(bookingAmount)}</span>
+                <span className="text-gray-600">Amount Due</span>
+                <span className="text-xl font-bold">{formatCurrency(finalPaymentAmount)}</span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {form.getValues("paymentOption") === "deposit" 
+                  ? `Deposit only (remaining balance of ${formatCurrency(totalPrice - 250)} due after service)` 
+                  : "Full payment with 5% discount applied"}
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-medium text-blue-800 mb-3">Bank Transfer Details</h3>
-              <div className="space-y-2 text-blue-900">
-                <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  <span>Bank Name: Royal Bank of Canada (RBC)</span>
+            <div>
+              <h3 className="text-sm font-medium mb-3">Select Payment Method</h3>
+              <RadioGroup 
+                defaultValue="bank" 
+                onValueChange={setPaymentMethod}
+                className="space-y-2"
+              >
+                <div className={`flex items-center space-x-2 border rounded-md p-3 ${paymentMethod === "bank" ? "bg-blue-50 border-blue-200" : ""}`}>
+                  <RadioGroupItem value="bank" id="method-bank" />
+                  <Label htmlFor="method-bank" className="flex-1 cursor-pointer">
+                    <div className="font-medium">Bank Transfer</div>
+                    <div className="text-xs text-gray-500">Transfer funds directly to our account</div>
+                  </Label>
                 </div>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>Account Name: Spotless Transitions Inc.</span>
+                
+                <div className={`flex items-center space-x-2 border rounded-md p-3 ${paymentMethod === "credit" ? "bg-blue-50 border-blue-200" : ""}`}>
+                  <RadioGroupItem value="credit" id="method-credit" />
+                  <Label htmlFor="method-credit" className="flex-1 cursor-pointer">
+                    <div className="font-medium">Credit/Debit Card</div>
+                    <div className="text-xs text-gray-500">Pay securely with your card</div>
+                  </Label>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  <span>Account Number: 0123-4567890</span>
+                
+                <div className={`flex items-center space-x-2 border rounded-md p-3 ${paymentMethod === "paypal" ? "bg-blue-50 border-blue-200" : ""}`}>
+                  <RadioGroupItem value="paypal" id="method-paypal" />
+                  <Label htmlFor="method-paypal" className="flex-1 cursor-pointer">
+                    <div className="font-medium">PayPal</div>
+                    <div className="text-xs text-gray-500">Pay using your PayPal account</div>
+                  </Label>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  <span>Transit Number: 00123</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  <span>Institution Number: 003</span>
+              </RadioGroup>
+            </div>
+
+            {paymentMethod === "bank" && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-800 mb-3">Bank Transfer Details</h3>
+                <div className="space-y-2 text-blue-900">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    <span>Bank Name: Royal Bank of Canada (RBC)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Account Name: Spotless Transitions Inc.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    <span>Account Number: 0123-4567890</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    <span>Transit Number: 00123</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    <span>Institution Number: 003</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex gap-2">
@@ -611,16 +1068,6 @@ export function BookingFormContent() {
                 </div>
               </div>
             </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="font-medium text-green-800 mb-2">What happens next?</h4>
-              <ol className="list-decimal list-inside text-sm text-green-700 space-y-1">
-                <li>Transfer the exact amount to our bank account</li>
-                <li>Use your booking reference as the payment reference</li>
-                <li>We'll verify your payment within 24 hours</li>
-                <li>You'll receive a confirmation email once verified</li>
-              </ol>
-            </div>
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row gap-3">
@@ -629,20 +1076,46 @@ export function BookingFormContent() {
               onClick={() => setIsPaymentModalOpen(false)}
               className="sm:w-auto w-full"
             >
-              Close
+              Cancel
             </Button>
 
-            <Button
-              onClick={() => {
-                // Mark the booking as pending payment and redirect
-                setIsPaymentModalOpen(false);
-                toast.success("Booking created! Please complete the bank transfer.");
-                router.push("/dashboard/booking-history");
-              }}
-              className="bg-[#10b981] hover:bg-[#0d9668] text-white sm:w-auto w-full"
-            >
-              I'll Make the Transfer
-            </Button>
+            {paymentMethod === "bank" ? (
+              <Button
+                onClick={() => {
+                  // Mark the booking as pending payment and redirect
+                  setIsPaymentModalOpen(false);
+                  toast.success("Booking created! Please complete the bank transfer.");
+                  router.push("/dashboard/booking-history");
+                }}
+                className="bg-[#10b981] hover:bg-[#0d9668] text-white sm:w-auto w-full"
+              >
+                I'll Make the Transfer
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  // Simulate payment processing
+                  setIsFormSubmitting(true);
+                  setTimeout(() => {
+                    setIsFormSubmitting(false);
+                    setIsPaymentModalOpen(false);
+                    toast.success("Payment successful! Your booking is confirmed.");
+                    router.push("/dashboard/booking-history");
+                  }, 2000);
+                }}
+                className="bg-[#10b981] hover:bg-[#0d9668] text-white sm:w-auto w-full"
+                disabled={isFormSubmitting}
+              >
+                {isFormSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Complete Payment"
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
