@@ -16,7 +16,7 @@ export function calculatePrice({
   formValues,
   services
 }: CalculatePriceParams): PriceCalculationResult {
-  const service = services.find(s => s.id === formValues.service)
+  const service = services.find(s => s.id || s.name === formValues.service)
   
   if (!service) {
     return {

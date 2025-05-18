@@ -59,7 +59,7 @@ export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-[400px] flex flex-col">
       <div className="w-full h-full flex items-center justify-center rounded-md border shadow bg-white p-2">
         <Calendar
           value={date}

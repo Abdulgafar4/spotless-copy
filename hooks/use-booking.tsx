@@ -26,10 +26,10 @@ export const useAdminBookings = (): UseBookingsReturn => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  
+
   // Get auth context with loading state
   const { user, isAdmin, loading: authLoading } = useAuth();
-  
+
   // Role-based permissions - only set these when auth is not loading
   const isClient = !authLoading && user?.user_metadata?.user_role === "client";
   const userId = user?.id;
@@ -37,19 +37,19 @@ export const useAdminBookings = (): UseBookingsReturn => {
   const canCreate = !authLoading; // All users can create bookings
   const canUpdate = !authLoading && (isAdmin === true || isClient === true);
   const canDelete = !authLoading && isAdmin === true;
-  
+
   // Fetch bookings based on user role
   const fetchBookings = useCallback(async () => {
     // Don't fetch if auth is still loading
     if (authLoading) {
       return;
     }
-    
+
     try {
       setLoading(true);
       // Step 1: Fetch bookings without trying to join
       let bookingsQuery = supabase.from("bookings").select("*");
-      
+
       // Filter bookings based on user role
       if (!isAdmin && userId) {
         bookingsQuery = bookingsQuery.eq("user_id", userId);
@@ -58,43 +58,43 @@ export const useAdminBookings = (): UseBookingsReturn => {
         setLoading(false);
         return;
       }
-      
+
       const { data: bookingsData, error: bookingsError } = await bookingsQuery.order("date", { ascending: false });
-      
+
       if (bookingsError) {
         throw bookingsError;
       }
-      
+
       // If no bookings, set empty array and return
       if (!bookingsData || bookingsData.length === 0) {
         setBookings([]);
         return;
       }
-      
+
       // Step 2: Get unique user IDs from bookings
       const userIds = [...new Set(bookingsData.map(booking => booking.user_id))];
-      
+
       // Step 3: Fetch profiles for those user IDs
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .in("id", userIds);
-        
+
       if (profilesError) {
         console.error("Error fetching profiles:", profilesError);
         // Just return bookings without profiles if there's an error
         setBookings(formatBookingsData(bookingsData));
         return;
       }
-      
+
       // Step 4: Create a map for quick profile lookups
-      const profilesMap : any = {};
+      const profilesMap: any = {};
       if (profilesData) {
         profilesData.forEach(profile => {
           profilesMap[profile.id] = profile;
         });
       }
-      
+
       // Step 5: Transform bookings to the required format
       const formattedBookings = bookingsData.map(booking => {
         const profile = profilesMap[booking?.user_id] || {};
@@ -105,7 +105,7 @@ export const useAdminBookings = (): UseBookingsReturn => {
             ? `${profile.first_name} ${profile.last_name}`
             : booking.customer_name || "",
           customerPhone: profile.phone || booking.phone || "",
-          customerEmail: profile.email || booking.customer_email|| "",
+          customerEmail: profile.email || booking.customer_email || "",
           service: booking.service_type || "",
           branch: booking.branch_id || "",
           date: booking.date || "",
@@ -113,15 +113,23 @@ export const useAdminBookings = (): UseBookingsReturn => {
           status: booking.status || "pending",
           assignedStaff: booking.assigned_staff || [],
           amount: booking.total_amount || 0,
+
           address: booking.address
-            ? `${booking.address}, ${booking.city || ""} ${booking.postal_code || ""}`
-            : (profile.address
-              ? `${profile.address}, ${profile.city || ""} ${profile.postal_code || ""}`
-              : ""),
+            ? `${booking.address}${booking.city ? `, ${booking.city}` : ''}${booking.postal_code ? ` ${booking.postal_code}` : ''}`
+            : "",
+
+          // Ensure these fields are passed through
+          price_breakdown: booking.price_breakdown,
+          property_details: booking.property_details,
+          images: booking.images,
+          payment_status: booking.payment_status,
+          payment_option: booking.payment_option,
+          payment_amount: booking.payment_amount,
+          notes: booking.notes,
           modified: booking.updated_at || booking.created_at || ""
         };
       });
-      
+
       setBookings(formattedBookings);
 
     } catch (err) {
@@ -138,26 +146,26 @@ export const useAdminBookings = (): UseBookingsReturn => {
     if (authLoading) {
       return;
     }
-  
+
     if (!isAdmin) {
       return; // Only admins should run this function
     }
-  
+
     try {
       // Get all pending bookings
       const { data: pendingBookings, error: fetchError } = await supabase
         .from("bookings")
         .select("*")
         .eq("status", "pending");
-  
+
       if (fetchError) {
         throw fetchError;
       }
-  
+
       if (!pendingBookings || pendingBookings.length === 0) {
         return;
       }
-  
+
       // Get current date and time
       const now = new Date();
       const overdueBookings = pendingBookings.filter(booking => {
@@ -165,29 +173,29 @@ export const useAdminBookings = (): UseBookingsReturn => {
         // If booking date has passed and status is still pending
         return bookingDate < now;
       });
-  
+
       if (overdueBookings.length === 0) {
         return;
       }
-  
+
       // Update all overdue bookings to 'due' status
-      const updates = overdueBookings.map(booking => 
+      const updates = overdueBookings.map(booking =>
         supabase
           .from("bookings")
           .update({ status: "due" })
           .eq("id", booking.id)
       );
-  
+
       await Promise.all(updates);
-  
+
       // Refresh bookings to reflect the changes
       await fetchBookings();
-  
+
     } catch (err) {
       console.error("Failed to update overdue bookings:", err);
     }
   }, [isAdmin, authLoading, fetchBookings]);
-  
+
 
   // Helper function to format booking data even if profiles aren't available
   const formatBookingsData = (bookingsData: any) => {
@@ -205,8 +213,17 @@ export const useAdminBookings = (): UseBookingsReturn => {
       assignedStaff: booking.assigned_staff || [],
       amount: booking.total_amount || 0,
       address: booking.address
-        ? `${booking.address}, ${booking.city || ""} ${booking.postal_code || ""}`
+        ? `${booking.address}${booking.city ? `, ${booking.city}` : ''}${booking.postal_code ? ` ${booking.postal_code}` : ''}`
         : "",
+
+      // Ensure these fields are passed through
+      price_breakdown: booking.price_breakdown,
+      property_details: booking.property_details,
+      images: booking.images,
+      payment_status: booking.payment_status,
+      payment_option: booking.payment_option,
+      payment_amount: booking.payment_amount,
+      notes: booking.notes,
       modified: booking.updated_at || booking.created_at || ""
     }));
   };
@@ -217,7 +234,7 @@ export const useAdminBookings = (): UseBookingsReturn => {
       if (authLoading) {
         throw new Error("Authentication is still loading");
       }
-      
+
       try {
         setLoading(true);
         // Ensure client_id is set to current user if not admin
@@ -226,23 +243,23 @@ export const useAdminBookings = (): UseBookingsReturn => {
           // If not admin or the client_id wasn't provided, set it to the current user
           client_id: isAdmin && bookingData.id ? bookingData.id : userId,
         };
-        
+
         const { data, error: supabaseError } = await supabase
           .from("bookings")
           .insert([finalBookingData])
           .select();
-          
+
         if (supabaseError) {
           throw supabaseError;
         }
-        
+
         const newBooking = data[0] as Booking;
-        
+
         // Only update state if the user can see this booking
         if (isAdmin || (isClient && newBooking.id === userId)) {
           setBookings((prev) => [...prev, newBooking]);
         }
-        
+
         return newBooking;
       } catch (err) {
         setError(
@@ -263,11 +280,11 @@ export const useAdminBookings = (): UseBookingsReturn => {
       if (authLoading) {
         throw new Error("Authentication is still loading");
       }
-      
+
       if (!canUpdate) {
         throw new Error("Unauthorized: You don't have permission to update bookings");
       }
-      
+
       try {
         setLoading(true);
         // For clients, verify they own the booking before updating
@@ -277,32 +294,32 @@ export const useAdminBookings = (): UseBookingsReturn => {
             .select("client_id")
             .eq("id", id)
             .single();
-            
+
           if (fetchError) {
             throw fetchError;
           }
-          
+
           if (existingBooking.client_id !== userId) {
             throw new Error("Unauthorized: You can only update your own bookings");
           }
         }
-        
+
         const { data, error: supabaseError } = await supabase
           .from("bookings")
           .update(bookingData)
           .eq("id", id)
           .select();
-          
+
         if (supabaseError) {
           throw supabaseError;
         }
-        
+
         const updatedBooking = data[0] as Booking;
-        
+
         setBookings((prev) =>
           prev.map((booking) => (booking.id === id ? updatedBooking : booking))
         );
-        
+
         return updatedBooking;
       } catch (err) {
         setError(
@@ -323,11 +340,11 @@ export const useAdminBookings = (): UseBookingsReturn => {
       if (authLoading) {
         throw new Error("Authentication is still loading");
       }
-      
+
       if (!isAdmin) {
         throw new Error("Unauthorized: Admin access required");
       }
-      
+
       try {
         setLoading(true);
         const { data, error: supabaseError } = await supabase
@@ -335,17 +352,17 @@ export const useAdminBookings = (): UseBookingsReturn => {
           .update({ status })
           .eq("id", id)
           .select();
-          
+
         if (supabaseError) {
           throw supabaseError;
         }
-        
+
         const updatedBooking = data[0] as Booking;
-        
+
         setBookings((prev) =>
           prev.map((booking) => (booking.id === id ? updatedBooking : booking))
         );
-        
+
         return updatedBooking;
       } catch (err) {
         setError(
@@ -366,11 +383,11 @@ export const useAdminBookings = (): UseBookingsReturn => {
       if (authLoading) {
         throw new Error("Authentication is still loading");
       }
-      
+
       if (!isAdmin) {
         throw new Error("Unauthorized: Admin access required");
       }
-      
+
       try {
         setLoading(true);
         // Update the booking with assigned staff names
@@ -379,17 +396,17 @@ export const useAdminBookings = (): UseBookingsReturn => {
           .update({ assigned_staff: staffNames })
           .eq("id", id)
           .select();
-          
+
         if (supabaseError) {
           throw supabaseError;
         }
-        
+
         const updatedBooking = data[0] as Booking;
-        
+
         setBookings((prev) =>
           prev.map((booking) => (booking.id === id ? updatedBooking : booking))
         );
-        
+
         return updatedBooking;
       } catch (err) {
         setError(
@@ -410,22 +427,22 @@ export const useAdminBookings = (): UseBookingsReturn => {
       if (authLoading) {
         throw new Error("Authentication is still loading");
       }
-      
+
       if (!canDelete) {
         throw new Error("Unauthorized: Admin access required");
       }
-      
+
       try {
         setLoading(true);
         const { error: supabaseError } = await supabase
           .from("bookings")
           .delete()
           .eq("id", id);
-          
+
         if (supabaseError) {
           throw supabaseError;
         }
-        
+
         setBookings((prev) => prev.filter((booking) => booking.id !== id));
         return true;
       } catch (err) {
@@ -447,7 +464,7 @@ export const useAdminBookings = (): UseBookingsReturn => {
       if (authLoading) {
         throw new Error("Authentication is still loading");
       }
-      
+
       try {
         setLoading(true);
         const { data, error: supabaseError } = await supabase
@@ -455,16 +472,16 @@ export const useAdminBookings = (): UseBookingsReturn => {
           .select("*")
           .eq("id", id)
           .single();
-          
+
         if (supabaseError) {
           throw supabaseError;
         }
-        
+
         // Verify access permissions for non-admins
         if (!isAdmin && data.client_id !== userId) {
           throw new Error("Unauthorized: You don't have permission to view this booking");
         }
-        
+
         return data as Booking;
       } catch (err) {
         setError(
@@ -496,11 +513,11 @@ export const useAdminBookings = (): UseBookingsReturn => {
   useEffect(() => {
     if (!authLoading && isAdmin) {
       updateOverdueBookings();
-  
+
       const interval = setInterval(() => {
         updateOverdueBookings();
       }, 86400000);
-  
+
       return () => clearInterval(interval);
     }
   }, [authLoading, isAdmin, updateOverdueBookings]);

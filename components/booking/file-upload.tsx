@@ -15,6 +15,17 @@ interface FileUploadProps {
 export function FileUpload({ files, setFiles, required = true }: FileUploadProps) {
   const [fileErrors, setFileErrors] = useState<string[]>([])
 
+  // Generate a unique filename to avoid Supabase storage conflicts
+  const createUniqueFile = (file: File): File => {
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 10);
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : `${timestamp}${randomString}`;
+    const fileExt = file.name.split('.').pop();
+    const uniqueName = `upload_${uuid}.${fileExt}`;
+    
+    return new File([file], uniqueName, { type: file.type });
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files)
@@ -36,9 +47,12 @@ export function FileUpload({ files, setFiles, required = true }: FileUploadProps
         return true
       })
       
+      // Create unique files to avoid Supabase conflicts
+      const uniqueFiles = validFiles.map(file => createUniqueFile(file));
+      
       // Limit total files to 10
-      if (files.length + validFiles.length <= 10) {
-        setFiles([...files, ...validFiles])
+      if (files.length + uniqueFiles.length <= 10) {
+        setFiles([...files, ...uniqueFiles])
       } else {
         errors.push("Maximum 10 images allowed")
       }
@@ -54,6 +68,16 @@ export function FileUpload({ files, setFiles, required = true }: FileUploadProps
   // Remove file from the list
   const removeFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index))
+  }
+
+  // Get original filename for display (strip the unique prefix)
+  const getDisplayName = (file: File): string => {
+    // If it's one of our unique files, extract the original name
+    if (file.name.startsWith('upload_')) {
+      const fileExt = file.name.split('.').pop();
+      return `File.${fileExt}`;
+    }
+    return file.name;
   }
 
   return (
@@ -94,7 +118,7 @@ export function FileUpload({ files, setFiles, required = true }: FileUploadProps
           <div className="flex flex-wrap gap-2">
             {files.map((file, index) => (
               <div key={index} className="flex items-center bg-gray-100 px-2 py-1 rounded text-xs">
-                <span className="truncate max-w-xs">{file.name}</span>
+                <span className="truncate max-w-xs">{getDisplayName(file)}</span>
                 <button
                   type="button"
                   onClick={() => removeFile(index)}

@@ -25,7 +25,13 @@ import {
   MessageSquare,
   CalendarCheck,
   CalendarX,
-  FileText
+  FileText,
+  Image as ImageIcon,
+  Home,
+  Bed,
+  Bath,
+  Car,
+  Tag
 } from "lucide-react"
 
 interface BookingDetailsDialogProps {
@@ -47,8 +53,23 @@ export function BookingDetailsDialog({
 }: BookingDetailsDialogProps) {
   if (!booking) return null
 
-  const formatDate = (dateString: string) => format(new Date(dateString), "MMM d, yyyy")
-  const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a")
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A"
+    try {
+      return format(new Date(dateString), "MMM d, yyyy")
+    } catch (error) {
+      return dateString || "N/A"
+    }
+  }
+  
+  const formatTime = (dateString: string) => {
+    if (!dateString) return "N/A"
+    try {
+      return format(new Date(dateString), "h:mm a")
+    } catch (error) {
+      return "N/A"
+    }
+  }
 
   // Helper for status badge
   const getStatusBadge = (status: string) => {
@@ -65,26 +86,78 @@ export function BookingDetailsDialog({
         return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>
       case "rejected":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>
-      case "due":   // Add this case
+      case "due":
         return <Badge className="bg-red-200 text-red-900">Overdue</Badge>
       default:
-        return <Badge>{status}</Badge>
+        return <Badge>{status || "Unknown"}</Badge>
     }
   }
+
+  // Parse price breakdown if available
+  const getPriceBreakdown = () => {
+    if (!booking.price_breakdown) return []
+    
+    try {
+      if (typeof booking.price_breakdown === 'string') {
+        return JSON.parse(booking.price_breakdown)
+      }
+      return booking.price_breakdown || []
+    } catch (error) {
+      console.error("Error parsing price breakdown:", error)
+      return []
+    }
+  }
+
+  // Parse property details if available
+  const getPropertyDetails = () => {
+    if (!booking.property_details) return null
+    
+    try {
+      if (typeof booking.property_details === 'string') {
+        return JSON.parse(booking.property_details)
+      }
+      return booking.property_details
+    } catch (error) {
+      console.error("Error parsing property details:", error)
+      return null
+    }
+  }
+
+  // Parse images if available
+  const getImages = () => {
+    if (!booking.images) return []
+    
+    try {
+      if (typeof booking.images === 'string') {
+        return JSON.parse(booking.images)
+      }
+      return Array.isArray(booking.images) ? booking.images : []
+    } catch (error) {
+      console.error("Error parsing images:", error)
+      return []
+    }
+  }
+
+  const propertyDetails = getPropertyDetails()
+  const priceBreakdown = getPriceBreakdown()
+  const images = getImages()
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="w-[95%] max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-10">
         <DialogHeader>
           <DialogTitle className="flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>Booking Details - {booking.refId}</span>
+            <span>Booking Details - {booking.reference_number || booking.refId || "N/A"}</span>
             {getStatusBadge(booking.status)}
           </DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="details" className="mt-4 sm:mt-6">
-          <TabsList className="grid grid-cols-2 w-full max-w-[400px] mx-auto">
-            <TabsTrigger value="details">Booking Details</TabsTrigger>
+          <TabsList className="grid grid-cols-4 w-full max-w-[600px] mx-auto">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="images">Images</TabsTrigger>
+            <TabsTrigger value="payment">Payment</TabsTrigger>
             <TabsTrigger value="staff">Staff & Notes</TabsTrigger>
           </TabsList>
 
@@ -94,7 +167,7 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Service Type</h3>
                 <p className="text-base flex items-center gap-2">
                   <ClipboardList className="h-4 w-4 text-gray-400" />
-                  {booking.service}
+                  {booking.service_type || booking.service || "N/A"}
                 </p>
               </div>
 
@@ -102,7 +175,7 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Branch</h3>
                 <p className="text-base flex items-center gap-2">
                   <Building className="h-4 w-4 text-gray-400" />
-                  {booking.branch}
+                  {booking.branch || booking.branch_id || "N/A"}
                 </p>
               </div>
 
@@ -110,16 +183,33 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Date</h3>
                 <p className="text-base flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  {booking.date}
+                  {formatDate(booking.date)}
                 </p>
               </div>
 
+              <div className="space-y-2 p-4 border rounded-md">
+                <h3 className="text-sm font-medium text-gray-500">Time</h3>
+                <p className="text-base flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  {booking.time || "N/A"}
+                </p>
+              </div>
 
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Created On</h3>
                 <p className="text-base flex items-center gap-2">
                   <FileText className="h-4 w-4 text-gray-400" />
-                  {formatDate(booking.modified)} at {formatTime(booking.modified)}
+                  {formatDate(booking.created_at || booking.modified)} 
+                  {booking.created_at || booking.modified ? ` at ${formatTime(booking.created_at || booking.modified)}` : ""}
+                </p>
+              </div>
+
+              <div className="space-y-2 p-4 border rounded-md">
+                <h3 className="text-sm font-medium text-gray-500">Last Updated</h3>
+                <p className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-gray-400" />
+                  {formatDate(booking.updated_at || booking.modified)} 
+                  {booking.updated_at || booking.modified ? ` at ${formatTime(booking.updated_at || booking.modified)}` : ""}
                 </p>
               </div>
             </div>
@@ -128,38 +218,87 @@ export function BookingDetailsDialog({
               <h3 className="text-sm font-medium text-gray-500">Service Address</h3>
               <p className="text-base flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-gray-400 mt-1" />
-                <span>{booking.address}</span>
+                <span>{booking.address || "N/A"}</span>
               </p>
+              {booking.city && (
+                <p className="text-base flex items-start gap-2 ml-6">
+                  <span>City: {booking.city}</span>
+                </p>
+              )}
+              {booking.postal_code && (
+                <p className="text-base flex items-start gap-2 ml-6">
+                  <span>Postal Code: {booking.postal_code}</span>
+                </p>
+              )}
             </div>
+
+            {propertyDetails && (
+              <div className="space-y-2 p-4 border rounded-md">
+                <h3 className="text-sm font-medium text-gray-500">Property Details</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Bed className="h-4 w-4 text-gray-400" />
+                    <span>Bedrooms: {propertyDetails.bedrooms || "0"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Bath className="h-4 w-4 text-gray-400" />
+                    <span>Bathrooms: {propertyDetails.bathrooms || "0"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-gray-400" />
+                    <span>Living Rooms: {propertyDetails.livingRooms || "0"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Car className="h-4 w-4 text-gray-400" />
+                    <span>Garages: {propertyDetails.garages || "0"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-gray-400" />
+                    <span>Den: {propertyDetails.den ? "Yes" : "No"}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2 p-4 border rounded-md bg-gray-50">
               <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
                 <Avatar className="h-16 w-16">
                   <AvatarFallback className="bg-green-100 text-green-600 text-xl font-bold">
-                    {booking.customerName.split(' ').map((name: string) => name[0]).join('').toUpperCase()}
+                    {(booking.customer_name || booking.customerName || "User").split(' ')
+                      .map((name: string) => name[0]).join('').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="text-center sm:text-left">
-                  <h3 className="text-lg font-semibold text-gray-800">{booking.customerName}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {booking.customer_name || booking.customerName || "N/A"}
+                  </h3>
                   <div className="space-y-1 mt-1">
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-gray-600">
                       <Mail className="h-4 w-4 text-green-500" />
-                      <a
-                        href={`mailto:${booking.customerEmail}`}
-                        className="text-green-600 hover:underline"
-                      >
-                        {booking.customerEmail}
-                      </a>
+                      {booking.customer_email || booking.customerEmail ? (
+                        <a
+                          href={`mailto:${booking.customer_email || booking.customerEmail}`}
+                          className="text-green-600 hover:underline"
+                        >
+                          {booking.customer_email || booking.customerEmail}
+                        </a>
+                      ) : (
+                        <span className="text-gray-500">No email provided</span>
+                      )}
                     </div>
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-gray-600">
                       <Phone className="h-4 w-4 text-green-500" />
-                      <a
-                        href={`tel:${booking.customerPhone}`}
-                        className="text-gray-700 hover:underline"
-                      >
-                        {booking.customerPhone}
-                      </a>
+                      {booking.phone || booking.customerPhone ? (
+                        <a
+                          href={`tel:${booking.phone || booking.customerPhone}`}
+                          className="text-gray-700 hover:underline"
+                        >
+                          {booking.phone || booking.customerPhone}
+                        </a>
+                      ) : (
+                        <span className="text-gray-500">No phone provided</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -258,17 +397,115 @@ export function BookingDetailsDialog({
             </div>
           </TabsContent>
 
+          <TabsContent value="images" className="mt-4 sm:mt-6 space-y-4">
+            {images && images.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {images.map((imageUrl: string, index: number) => (
+                  <div key={index} className="border rounded-md overflow-hidden">
+                    <div className="aspect-video relative">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Booking image ${index + 1}`} 
+                        className="object-cover w-full h-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/api/placeholder/400/300";
+                          (e.target as HTMLImageElement).alt = "Image failed to load";
+                        }}
+                      />
+                    </div>
+                    <div className="p-2 bg-gray-50">
+                      <p className="text-sm text-gray-500 text-center">Image {index + 1}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-gray-50">
+                <ImageIcon className="h-16 w-16 text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-500">No Images Available</h3>
+                <p className="text-sm text-gray-400 mt-2 text-center">
+                  No property or service images have been uploaded for this booking.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="payment" className="mt-4 sm:mt-6 space-y-4">
+            <div className="space-y-2 p-4 border rounded-md">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-gray-500">Payment Information</h3>
+                <Badge className={booking.payment_status === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                  {booking.payment_status ? booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1) : "Unknown"}
+                </Badge>
+              </div>
+              
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Payment Option</span>
+                  <span className="font-medium">{booking.payment_option || "N/A"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Amount</span>
+                  <span className="font-medium">${booking.total_amount || "0.00"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Amount Paid</span>
+                  <span className="font-medium">${booking.payment_amount || "0.00"}</span>
+                </div>
+                {booking.total_amount && booking.payment_amount && 
+                 Number(booking.total_amount) > Number(booking.payment_amount) && (
+                  <div className="flex justify-between font-medium">
+                    <span className="text-red-600">Balance Due</span>
+                    <span className="text-red-600">
+                      ${(Number(booking.total_amount) - Number(booking.payment_amount)).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {priceBreakdown && priceBreakdown.length > 0 && (
+              <div className="space-y-2 p-4 border rounded-md">
+                <h3 className="text-sm font-medium text-gray-500">Price Breakdown</h3>
+                <div className="mt-2 space-y-2">
+                  {priceBreakdown.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between py-1 border-b border-gray-100 last:border-0">
+                      <span className="flex items-center">
+                        <Tag className="h-4 w-4 text-gray-400 mr-2" />
+                        {item.item}
+                      </span>
+                      <span className={Number(item.price) < 0 ? "text-red-600" : ""}>
+                        ${Number(item.price) > 0 ? Number(item.price).toFixed(2) : `(${Math.abs(Number(item.price)).toFixed(2)})`}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between py-2 border-t border-gray-300 font-medium">
+                    <span>Total</span>
+                    <span>${booking.total_amount || "0.00"}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
           <TabsContent value="staff" className="mt-4 sm:mt-6 space-y-4">
             <div className="space-y-2 p-4 border rounded-md">
               <h3 className="text-sm font-medium text-gray-500">Assigned Staff</h3>
-              {booking.assignedStaff && booking.assignedStaff.length > 0 ? (
+              {booking.assigned_staff || (booking.assignedStaff && booking.assignedStaff.length > 0) ? (
                 <ul className="mt-2 space-y-2">
-                  {booking.assignedStaff.map((staff: string, index: number) => (
-                    <li key={index} className="flex items-center gap-2">
+                  {/* Handle both string and array formats */}
+                  {Array.isArray(booking.assigned_staff || booking.assignedStaff) ? 
+                    (booking.assigned_staff || booking.assignedStaff).map((staff: string, index: number) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <span>{staff}</span>
+                      </li>
+                    )) : 
+                    <li className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span>{staff}</span>
+                      <span>{booking.assigned_staff || booking.assignedStaff}</span>
                     </li>
-                  ))}
+                  }
                 </ul>
               ) : (
                 <p className="text-gray-500 mt-2 italic">No staff assigned yet</p>
@@ -281,7 +518,9 @@ export function BookingDetailsDialog({
                   onClick={() => onAssignStaff(booking)}
                 >
                   <User className="mr-2 h-4 w-4" />
-                  {booking.assignedStaff && booking.assignedStaff.length > 0 ? "Reassign Staff" : "Assign Staff"}
+                  {booking.assigned_staff || (booking.assignedStaff && booking.assignedStaff.length > 0) 
+                    ? "Reassign Staff" 
+                    : "Assign Staff"}
                 </Button>
               )}
             </div>
