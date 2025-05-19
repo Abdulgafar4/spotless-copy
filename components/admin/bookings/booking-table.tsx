@@ -10,15 +10,15 @@ import { BookingRow } from "./booking-row"
 import { Calendar } from "lucide-react"
 
 export const BookingsTable: React.FC<BookingsTableProps> = ({ 
-    paginatedBookings, 
-    onViewBooking, 
-    onUpdateStatus, 
-    onAssignStaff, 
-    onMessageCustomer,
-    searchTerm,
-    statusFilter,
-    dateFilter,
-    branchFilter
+  paginatedBookings, 
+  onViewBooking, 
+  onUpdateStatus, 
+  onAssignStaff, 
+  onMessageCustomer,
+  searchTerm,
+  statusFilter,
+  dateFilter,
+  branchFilter
   }) => (
     <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto for horizontal scrolling */}
     <Table className="min-w-full">

@@ -1,6 +1,7 @@
 "use client"
 
 import { format } from "date-fns"
+import { useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   User,
   Mail,
@@ -31,7 +34,12 @@ import {
   Bed,
   Bath,
   Car,
-  Tag
+  Tag,
+  Plus,
+  Minus,
+  Edit,
+  Save,
+  XCircle
 } from "lucide-react"
 
 interface BookingDetailsDialogProps {
@@ -41,6 +49,7 @@ interface BookingDetailsDialogProps {
   onUpdateStatus: (booking: any, status: string) => void
   onAssignStaff: (booking: any) => void
   onMessageCustomer: (booking: any) => void
+  onUpdatePayment: (booking: any, paymentData: any) => void
 }
 
 export function BookingDetailsDialog({
@@ -49,9 +58,17 @@ export function BookingDetailsDialog({
   booking,
   onUpdateStatus,
   onAssignStaff,
-  onMessageCustomer
+  onMessageCustomer,
+  onUpdatePayment
 }: BookingDetailsDialogProps) {
   if (!booking) return null
+
+  // State for payment adjustment
+  const [isEditingPayment, setIsEditingPayment] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState(booking?.payment_amount || "0.00")
+  const [paymentNote, setPaymentNote] = useState("")
+  const [paymentStatus, setPaymentStatus] = useState(booking?.payment_status || "pending")
+  const [totalAmount, setTotalAmount] = useState(booking?.amount || "0.00")
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A"
@@ -138,9 +155,36 @@ export function BookingDetailsDialog({
     }
   }
 
+  // Handle payment update
+  const handleUpdatePayment = () => {
+    const updatedPaymentData = {
+      payment_amount: paymentAmount,
+      payment_status: paymentStatus,
+      payment_note: paymentNote,
+      total_amount: totalAmount,
+      updated_at: new Date().toISOString()
+    }
+    
+    onUpdatePayment(booking, updatedPaymentData)
+    setIsEditingPayment(false)
+  }
+
+  // Cancel payment editing
+  const handleCancelPaymentEdit = () => {
+    setPaymentAmount(booking?.payment_amount || "0.00")
+    setPaymentStatus(booking?.payment_status || "pending")
+    setTotalAmount(booking?.total_amount || "0.00")
+    setPaymentNote("")
+    setIsEditingPayment(false)
+  }
+
   const propertyDetails = getPropertyDetails()
   const priceBreakdown = getPriceBreakdown()
   const images = getImages()
+
+  const currentTotal = Number(totalAmount || booking.total_amount || 0)
+  const currentPaid = Number(paymentAmount || 0)
+  const balanceDue = currentTotal - currentPaid
 
 
   return (
@@ -434,37 +478,242 @@ export function BookingDetailsDialog({
             <div className="space-y-2 p-4 border rounded-md">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium text-gray-500">Payment Information</h3>
-                <Badge className={booking.payment_status === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                  {booking.payment_status ? booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1) : "Unknown"}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className={paymentStatus === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                    {paymentStatus ? paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1) : "Unknown"}
+                  </Badge>
+                  {!isEditingPayment && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsEditingPayment(true)}
+                      className="h-8 px-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
               
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Payment Option</span>
-                  <span className="font-medium">{booking.payment_option || "N/A"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Amount</span>
-                  <span className="font-medium">${booking.total_amount || "0.00"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Amount Paid</span>
-                  <span className="font-medium">${booking.payment_amount || "0.00"}</span>
-                </div>
-                {booking.total_amount && booking.payment_amount && 
-                 Number(booking.total_amount) > Number(booking.payment_amount) && (
-                  <div className="flex justify-between font-medium">
-                    <span className="text-red-600">Balance Due</span>
-                    <span className="text-red-600">
-                      ${(Number(booking.total_amount) - Number(booking.payment_amount)).toFixed(2)}
-                    </span>
+              {!isEditingPayment ? (
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment Option</span>
+                    <span className="font-medium">{booking.payment_option || "N/A"}</span>
                   </div>
-                )}
-              </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Amount</span>
+                    <span className="font-medium">${totalAmount || booking.total_amount || "0.00"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Amount Paid</span>
+                    <span className="font-medium">${paymentAmount || "0.00"}</span>
+                  </div>
+                  {balanceDue > 0 && (
+                    <div className="flex justify-between font-medium">
+                      <span className="text-red-600">Balance Due</span>
+                      <span className="text-red-600">
+                        ${balanceDue.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-status">Payment Status</Label>
+                    <div className="relative">
+                      <select
+                        id="payment-status"
+                        value={paymentStatus}
+                        onChange={(e) => setPaymentStatus(e.target.value)}
+                        className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="partially_paid">Partially Paid</option>
+                        <option value="paid">Paid</option>
+                        <option value="refunded">Refunded</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-end gap-4">
+                    <div className="space-y-2 flex-1">
+                      <Label htmlFor="total-amount">Total Amount</Label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <DollarSign className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <Input
+                          id="total-amount"
+                          type="number"
+                          step="0.01"
+                          min={paymentAmount}
+                          value={totalAmount}
+                          onChange={(e) => setTotalAmount(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 flex-1">
+                      <Label htmlFor="amount-paid">Amount Paid</Label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <DollarSign className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <Input
+                          id="amount-paid"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max={booking.total_amount || "0.00"}
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="adjustment-reason">Adjustment Reason</Label>
+                    <select
+                      id="adjustment-reason"
+                      className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mt-1"
+                      onChange={(e) => {
+                        const reason = e.target.value;
+                        if (reason) {
+                          setPaymentNote(reason === "other" ? "" : reason);
+                        }
+                      }}
+                    >
+                      <option value="">-- Select a reason --</option>
+                      <option value="Price adjustment due to service change">Price adjustment - Service change</option>
+                      <option value="Additional services requested">Additional services requested</option>
+                      <option value="Discount applied">Discount applied</option>
+                      <option value="Special promotion">Special promotion</option>
+                      <option value="Correction of billing error">Correction of billing error</option>
+                      <option value="Customer accommodation">Customer accommodation</option>
+                      <option value="other">Other (specify below)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="payment-note">Payment Note</Label>
+                    <textarea
+                      id="payment-note"
+                      value={paymentNote}
+                      onChange={(e) => setPaymentNote(e.target.value)}
+                      placeholder="Add a note about this payment adjustment..."
+                      className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[80px]"
+                    />
+                  </div>
+                </div>
+                  
+                  <div className="pt-2 flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleCancelPaymentEdit}
+                      className="flex items-center"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUpdatePayment}
+                      className="bg-green-500 hover:bg-green-600 flex items-center"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {priceBreakdown && priceBreakdown.length > 0 && (
+            {!isEditingPayment && (
+              <>
+                {/* Quick Payment Actions */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                                      <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setPaymentAmount(totalAmount || booking.total_amount || "0.00");
+                      setPaymentStatus("paid");
+                      setPaymentNote("Marked as fully paid");
+                      setIsEditingPayment(true);
+                    }}
+                  >
+                    <DollarSign className="mr-2 h-4 w-4 text-green-500" />
+                    Mark as Fully Paid
+                  </Button>
+                  
+                                      <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      // Add 50% of the remaining balance
+                      const remainingBalance = Number(totalAmount || booking.total_amount || 0) - Number(paymentAmount || 0);
+                      const halfRemaining = remainingBalance / 2;
+                      const newAmount = (Number(paymentAmount || 0) + halfRemaining).toFixed(2);
+                      
+                      setPaymentAmount(newAmount);
+                      setPaymentStatus("partially_paid");
+                      setPaymentNote("Added partial payment");
+                      setIsEditingPayment(true);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4 text-blue-500" />
+                    Add Partial Payment
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setPaymentAmount("0.00");
+                      setPaymentStatus("refunded");
+                      setPaymentNote("Payment refunded");
+                      setIsEditingPayment(true);
+                    }}
+                  >
+                    <Minus className="mr-2 h-4 w-4 text-red-500" />
+                    Refund Payment
+                  </Button>
+                </div>
+                
+                {/* Payment History Section (Future Enhancement) */}
+                <div className="space-y-2 p-4 border rounded-md">
+                  <h3 className="text-sm font-medium text-gray-500">Payment History</h3>
+                  
+                  {booking.payment_history && booking.payment_history.length > 0 ? (
+                    <div className="mt-2 space-y-2">
+                      {booking.payment_history.map((payment: any, index: number) => (
+                        <div key={index} className="flex justify-between py-1 border-b border-gray-100 last:border-0">
+                          <div>
+                            <span className="text-gray-700">{formatDate(payment.date)} {payment.time}</span>
+                            <p className="text-sm text-gray-500">{payment.note}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className={payment.type === 'refund' ? 'text-red-600' : 'text-green-600'}>
+                              {payment.type === 'refund' ? '-' : '+'} ${Number(payment.amount).toFixed(2)}
+                            </span>
+                            <p className="text-xs text-gray-500">{payment.method}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 mt-2 italic">No payment history available</p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {priceBreakdown && priceBreakdown.length > 0 && !isEditingPayment && (
               <div className="space-y-2 p-4 border rounded-md">
                 <h3 className="text-sm font-medium text-gray-500">Price Breakdown</h3>
                 <div className="mt-2 space-y-2">
@@ -481,7 +730,7 @@ export function BookingDetailsDialog({
                   ))}
                   <div className="flex justify-between py-2 border-t border-gray-300 font-medium">
                     <span>Total</span>
-                    <span>${booking.total_amount || "0.00"}</span>
+                    <span>${totalAmount || booking.total_amount || "0.00"}</span>
                   </div>
                 </div>
               </div>

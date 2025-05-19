@@ -6,6 +6,8 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  ArrowDown,
+  ArrowUp,
 } from "lucide-react"
 import {
   Card,
@@ -34,6 +36,8 @@ export default function BookingsPage() {
   const [dateFilter, setDateFilter] = useState("all")
   const [branchFilter, setBranchFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
+  // Add sort state
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc") // Default to descending
 
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
@@ -59,7 +63,7 @@ export default function BookingsPage() {
     fetchBookings()
   }, [fetchBookings])
 
-  // Filtering and Sorting Logic
+  // Filtering Logic
   const filterBookings = (bookings: Booking[]) => {
     return bookings.filter(booking => {
       // Search filter
@@ -67,6 +71,7 @@ export default function BookingsPage() {
         booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.refId.includes(searchTerm) ||
         booking.address.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Status filter
@@ -95,6 +100,11 @@ export default function BookingsPage() {
     });
   }
 
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
+  }
+
   // Calculate Booking Metrics
   const calculateBookingMetrics = (bookings: Booking[]) => {
     // Count bookings by status
@@ -117,11 +127,27 @@ export default function BookingsPage() {
     return { countByStatus, upcomingBookings, todayBookings }
   }
 
-  // Pagination Logic
+
+
+  // Pagination and Sorting Logic
   const paginateBookings = (bookings: Booking[]) => {
-    // Sort bookings by date (most recent first)
+    // Sort bookings by reference_id or id in descending or ascending order
     const sortedBookings = [...bookings].sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      // Use reference_id/reference_number if available, otherwise fall back to id
+      const refA = a.refId || '';
+      const refB = b.refId || '';
+
+      // If both are numeric, convert to numbers for comparison
+      if (!isNaN(Number(refA)) && !isNaN(Number(refB))) {
+        return sortDirection === 'desc'
+          ? Number(refB) - Number(refA)
+          : Number(refA) - Number(refB);
+      }
+
+      // Otherwise treat as strings
+      return sortDirection === 'desc'
+        ? String(refB).localeCompare(String(refA))
+        : String(refA).localeCompare(String(refB));
     });
 
     const totalPages = Math.ceil(sortedBookings.length / itemsPerPage)
@@ -172,7 +198,7 @@ export default function BookingsPage() {
     try {
       await updateBookingStatus(selectedBooking.id, confirmAction.action as BookingStatus);
       setIsConfirmDialogOpen(false);
-      
+
       // Refetch bookings after status update
       await fetchBookings();
       toast.success(`Booking status updated to ${confirmAction.action}`);
@@ -198,7 +224,7 @@ export default function BookingsPage() {
 
       // Add toast notification for feedback
       toast.success("Staff successfully assigned to booking");
-      
+
       // Refetch bookings instead of reloading the page
       await fetchBookings();
     } catch (error) {
@@ -216,10 +242,10 @@ export default function BookingsPage() {
     // In a real app, this would send a message to the customer
     console.log(`Sending message to ${selectedBooking?.customerName}:`, message);
     setIsMessageDialogOpen(false);
-    
+
     // Show success toast
     toast.success(`Message sent to ${selectedBooking?.customerName}`);
-    
+
     // Refetch bookings in case message sending affects booking status
     await fetchBookings();
   }
@@ -276,16 +302,35 @@ export default function BookingsPage() {
                   View and manage all customer bookings
                 </CardDescription>
               </div>
-              <BookingFilters
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                dateFilter={dateFilter}
-                setDateFilter={setDateFilter}
-                branchFilter={branchFilter}
-                setBranchFilter={setBranchFilter}
-              />
+              <div className="flex items-center gap-4">
+                <BookingFilters
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  dateFilter={dateFilter}
+                  setDateFilter={setDateFilter}
+                  branchFilter={branchFilter}
+                  setBranchFilter={setBranchFilter}
+                />
+                {/* Add sort direction toggle */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleSortDirection}
+                  className="flex items-center gap-1"
+                >
+                  {sortDirection === 'desc' ? (
+                    <>
+                      Reference ID <ArrowDown className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Reference ID <ArrowUp className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -376,8 +421,9 @@ export default function BookingsPage() {
         booking={selectedBooking}
         onAssignStaff={handleAssignStaff}
         onUpdateStatus={handleUpdateStatus}
-        onMessageCustomer={handleMessageCustomer}
-      />
+        onMessageCustomer={handleMessageCustomer} onUpdatePayment={function (booking: any, paymentData: any): void {
+          throw new Error("Function not implemented.")
+        }} />
 
       <ConfirmActionDialog
         isOpen={isConfirmDialogOpen}
