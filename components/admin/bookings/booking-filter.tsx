@@ -25,7 +25,7 @@ export const BookingFilters: React.FC<BookingFiltersProps> = ({
           disabled={disabled}
         />
       </div>
-      <div className="flex gap-2">
+      <div className="hidden md:flex gap-2">
         {[
           { 
             value: statusFilter, 
