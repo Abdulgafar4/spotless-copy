@@ -245,7 +245,7 @@ export function InquiryDetailsDialog({
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'new':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">New</Badge>
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">New</Badge>
       case 'in-progress':
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">In Progress</Badge>
       case 'resolved':
@@ -359,14 +359,14 @@ export function InquiryDetailsDialog({
                     <div className="space-y-2">
                       <div className="flex items-center text-sm">
                         <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                        <a href={`mailto:${inquiry.email}`} className="text-blue-600 hover:underline">
+                        <a href={`mailto:${inquiry.email}`} className="text-green-600 hover:underline">
                           {inquiry.email}
                         </a>
                       </div>
                       {inquiry.phone && (
                         <div className="flex items-center text-sm">
                           <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                          <a href={`tel:${inquiry.phone}`} className="text-blue-600 hover:underline">
+                          <a href={`tel:${inquiry.phone}`} className="text-green-600 hover:underline">
                             {inquiry.phone}
                           </a>
                         </div>
@@ -462,7 +462,7 @@ export function InquiryDetailsDialog({
                   <div className="space-y-4">
                     <h3 className="font-medium">Response History</h3>
                     {inquiry.responses.map((response: any) => (
-                      <div key={response.id} className="flex gap-4 px-4 py-3 bg-blue-50 rounded-md">
+                      <div key={response.id} className="flex gap-4 px-4 py-3 bg-green-50 rounded-md">
                         <Avatar className="h-10 w-10">
                           <AvatarFallback>
                             {response.staff 
@@ -474,7 +474,7 @@ export function InquiryDetailsDialog({
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{response.staff || "Staff"}</span>
-                            <Badge className="bg-blue-100 text-blue-800">Staff</Badge>
+                            <Badge className="bg-green-100 text-green-800">Staff</Badge>
                             <span className="text-xs text-gray-500">
                               {format(new Date(response.date), "MMM d, yyyy 'at' h:mm a")}
                             </span>

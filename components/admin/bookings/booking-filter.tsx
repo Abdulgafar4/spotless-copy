@@ -25,7 +25,7 @@ export const BookingFilters: React.FC<BookingFiltersProps> = ({
           disabled={disabled}
         />
       </div>
-      <div className="hidden md:flex gap-2">
+      <div className="hidden lg:flex gap-2">
         {[
           { 
             value: statusFilter, 
@@ -34,13 +34,13 @@ export const BookingFilters: React.FC<BookingFiltersProps> = ({
             placeholder: "Status",
             width: "w-[130px]"
           },
-          { 
-            value: dateFilter, 
-            onChange: setDateFilter, 
-            options: DATE_OPTIONS, 
-            placeholder: "Date",
-            width: "w-[130px]"
-          },
+          // { 
+          //   value: dateFilter, 
+          //   onChange: setDateFilter, 
+          //   options: DATE_OPTIONS, 
+          //   placeholder: "Date",
+          //   width: "w-[130px]"
+          // },
           { 
             value: branchFilter, 
             onChange: setBranchFilter, 

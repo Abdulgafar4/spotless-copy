@@ -82,3 +82,31 @@ export async function deleteServiceImage(
     return false
   }
 }
+
+export const generateUniqueFileName = (originalFile: File, bookingRef?: string, index?: number): string => {
+  // Get file extension
+  const fileExtension = originalFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+  
+  // Generate multiple layers of uniqueness
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 15);
+  const uuid = crypto.randomUUID ? crypto.randomUUID() : `${timestamp}_${randomId}`;
+  const bookingPrefix = bookingRef ? `${bookingRef}_` : '';
+  const indexSuffix = typeof index === 'number' ? `_${index}` : '';
+  
+  // Create ultra-unique filename
+  const uniqueFileName = `${bookingPrefix}${uuid}${indexSuffix}_${timestamp}.${fileExtension}`;
+  
+  console.log(`📸 Generated unique filename: ${originalFile.name} → ${uniqueFileName}`);
+  
+  return uniqueFileName;
+};
+
+export const createUniqueFile = (originalFile: File, bookingRef?: string, index?: number): File => {
+  const uniqueFileName = generateUniqueFileName(originalFile, bookingRef, index);
+  
+  return new File([originalFile], uniqueFileName, {
+    type: originalFile.type,
+    lastModified: originalFile.lastModified
+  });
+};

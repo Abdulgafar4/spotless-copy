@@ -12,7 +12,7 @@ export function CancellationPolicy() {
     <Card className="mb-6">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <InfoIcon className="h-5 w-5 text-blue-500" />
+          <InfoIcon className="h-5 w-5 text-green-500" />
           <CardTitle className="text-lg">Cancellation Policy</CardTitle>
         </div>
         <CardDescription>

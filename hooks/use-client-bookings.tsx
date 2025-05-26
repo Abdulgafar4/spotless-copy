@@ -19,7 +19,11 @@ export interface Booking {
   staff_assigned?: string[];
   notes?: string;
   user_id: string;
-  reference_number: string
+  reference_number: string;
+  images?: string[];
+  property_details?: any;
+  payment_option?: string;
+  payment_amount?: number;
 }
 
 interface BookingFilters {

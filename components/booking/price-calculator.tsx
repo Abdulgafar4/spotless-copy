@@ -10,6 +10,7 @@ interface PriceCalculationResult {
   totalPrice: number
   priceBreakdown: PriceBreakdownItem[]
   finalPaymentAmount: number
+  originalSubtotal: number // Add this to track original price
 }
 
 export function calculatePrice({
@@ -23,7 +24,8 @@ export function calculatePrice({
       basePrice: 0,
       totalPrice: 0,
       priceBreakdown: [],
-      finalPaymentAmount: 0
+      finalPaymentAmount: 0,
+      originalSubtotal: 0
     }
   }
   
@@ -85,25 +87,35 @@ export function calculatePrice({
     breakdown.push({ item: "Den", price: denPrice })
   }
   
-  const subtotal = servicePrice + additionalCost
+  // Calculate original subtotal (this should never change)
+  const originalSubtotal = servicePrice + additionalCost
   
-  // Apply discount if full payment option selected
-  let finalTotal = subtotal
+  // Calculate final total and payment amount based on payment option
+  let finalTotal = originalSubtotal
+  let finalPaymentAmount = originalSubtotal
+  
   if (formValues.paymentOption === "full") {
-    const discount = subtotal * 0.05 // 5% discount
-    finalTotal = subtotal - discount
+    // Apply 5% discount for full payment
+    const discount = originalSubtotal * 0.05
+    finalTotal = originalSubtotal - discount
+    finalPaymentAmount = finalTotal
     breakdown.push({ item: "5% Discount (Pay in Full)", price: -discount })
+  } else if (formValues.paymentOption === "deposit") {
+    // For deposit: total remains original price, but payment is 70% of original
+    finalTotal = originalSubtotal
+    finalPaymentAmount = originalSubtotal * 0.7
+    // Don't add discount to breakdown for deposit option
+  } else {
+    // Default case (no payment option selected yet)
+    finalTotal = originalSubtotal
+    finalPaymentAmount = originalSubtotal
   }
-  
-  // Set payment amount based on selected option
-  const finalPaymentAmount = formValues.paymentOption === "deposit" 
-    ? subtotal * 0.7 // 70% deposit
-    : finalTotal // Full amount with discount
   
   return {
     basePrice: servicePrice,
     totalPrice: finalTotal,
     priceBreakdown: breakdown,
-    finalPaymentAmount
+    finalPaymentAmount,
+    originalSubtotal
   }
 }

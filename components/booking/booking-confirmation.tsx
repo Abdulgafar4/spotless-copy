@@ -16,7 +16,6 @@ export default function BookingConfirmationPage() {
   const searchParams = useSearchParams()
   const bookingRef = searchParams.get("ref")
     const [booking, setBooking] = useState<any>(null)
-  const [bookingImages, setBookingImages] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -53,19 +52,6 @@ export default function BookingConfirmationPage() {
           }
         }
         
-        // Fetch booking images if available
-        if (bookingData.id) {
-          const { data: images, error: imagesError } = await supabase
-            .from("booking_images")
-            .select("image_url")
-            .eq("booking_id", bookingData.id)
-            .order('created_at', { ascending: true })
-          
-          if (!imagesError && images && images.length > 0) {
-            setBookingImages(images.map((img: { image_url: string }) => img.image_url))
-          }
-        }
-        
         // Combine the data
         setBooking({
           ...bookingData,
@@ -82,6 +68,22 @@ export default function BookingConfirmationPage() {
     fetchBookingDetails()
   }, [bookingRef])
 
+  const getImages = () => {
+    if (!booking.images) return []
+
+    try {
+      if (typeof booking.images === 'string') {
+        return JSON.parse(booking.images)
+      }
+      return Array.isArray(booking.images) ? booking.images : []
+    } catch (error) {
+      console.error("Error parsing images:", error)
+      return []
+    }
+  }
+
+  const bookingImages = getImages()
+
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -95,6 +97,7 @@ export default function BookingConfirmationPage() {
     setActiveImageIndex(index)
   }
 
+
   const handlePrevImage = () => {
     setActiveImageIndex((prevIndex) => 
       prevIndex === 0 ? bookingImages.length - 1 : prevIndex - 1
@@ -106,6 +109,9 @@ export default function BookingConfirmationPage() {
       prevIndex === bookingImages.length - 1 ? 0 : prevIndex + 1
     )
   }
+
+
+console.log(bookingImages)
 
  return (
   <DashboardLayout>
@@ -189,11 +195,11 @@ export default function BookingConfirmationPage() {
               
               {bookingImages.length > 1 && (
                 <div className="grid grid-cols-6 gap-2">
-                  {bookingImages.map((image, index) => (
+                  {bookingImages.map((image: string, index: number) => (
                     <div 
                       key={index} 
                       className={`relative aspect-w-1 aspect-h-1 rounded-md overflow-hidden cursor-pointer ${
-                        activeImageIndex === index ? 'ring-2 ring-blue-500' : ''
+                        activeImageIndex === index ? 'ring-2 ring-green-500' : ''
                       }`}
                       onClick={() => handleImageClick(index)}
                     >
@@ -223,7 +229,7 @@ export default function BookingConfirmationPage() {
                 
                 <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                   <div className="flex items-start gap-3">
-                    <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-700 mt-0.5">
+                    <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 mt-0.5">
                       {booking.service_type}
                     </Badge>
                     <Badge variant="outline" className="bg-purple-50 border-purple-200 text-purple-700 mt-0.5">

@@ -28,6 +28,7 @@ import { BookingFilters } from "./booking-filter"
 import { BookingsTable } from "./booking-table"
 import { useAdminBookings } from "@/hooks/use-booking"
 import { toast } from "sonner"
+import { RefundCancellationDialog } from "./refund-cancellation-dialog"
 
 
 export default function BookingsPage() {
@@ -47,6 +48,8 @@ export default function BookingsPage() {
   })
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false)
+  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false)
+
 
   const {
     bookings,
@@ -55,6 +58,8 @@ export default function BookingsPage() {
     fetchBookings,
     updateBookingStatus,
     assignStaffToBooking,
+    cancelBookingWithRefund,
+    updatePayment,
   } = useAdminBookings();
 
   const itemsPerPage = 10
@@ -63,6 +68,16 @@ export default function BookingsPage() {
     fetchBookings()
   }, [fetchBookings])
 
+  const handleUpdatePayment = async (booking: any, paymentData: any) => {
+  try {
+    await updatePayment(booking.id, paymentData);
+    toast.success('Payment information updated successfully');
+    await fetchBookings(); // Refresh the booking list
+  } catch (error) {
+    console.error('Failed to update payment:', error);
+    toast.error('Failed to update payment information');
+  }
+};
   // Filtering Logic
   const filterBookings = (bookings: Booking[]) => {
     return bookings.filter(booking => {
@@ -156,22 +171,44 @@ export default function BookingsPage() {
 
     return { sortedBookings, totalPages, startIndex, paginatedBookings }
   }
+  const handleCancelWithRefund = (booking: any) => {
+    setSelectedBooking(booking)
+    setIsRefundDialogOpen(true)
+  }
 
+  const handleRefundSubmit = async (
+    bookingId: string,
+    reason: string,
+    refundType: 'full' | 'partial' | 'none',
+    customRefundAmount?: number
+  ) => {
+    try {
+      await cancelBookingWithRefund(bookingId, reason, refundType, customRefundAmount)
+      toast.success('Booking cancelled and refund processed successfully')
+      await fetchBookings() // Refresh the booking list
+    } catch (error) {
+      console.error('Failed to cancel booking with refund:', error)
+      toast.error('Failed to process cancellation and refund')
+    }
+  }
   // Action Handlers
   const handleViewBooking = (booking: Booking) => {
     setSelectedBooking(booking)
     setIsDetailsDialogOpen(true)
   }
 
-  const handleUpdateStatus = (booking: Booking, newStatus: string) => {
+  const handleUpdateStatus = (booking: any, newStatus: string) => {
+    // For cancellation, use the refund dialog instead
+    if (newStatus === 'cancelled') {
+      handleCancelWithRefund(booking)
+      return
+    }
+
+    // Handle other status updates normally
     const statusActions: Record<string, { title: string; description: string }> = {
       "confirmed": {
         title: "Confirm Booking",
         description: "Are you sure you want to confirm this booking?"
-      },
-      "cancelled": {
-        title: "Cancel Booking",
-        description: "Are you sure you want to cancel this booking?"
       },
       "completed": {
         title: "Mark as Completed",
@@ -421,9 +458,9 @@ export default function BookingsPage() {
         booking={selectedBooking}
         onAssignStaff={handleAssignStaff}
         onUpdateStatus={handleUpdateStatus}
-        onMessageCustomer={handleMessageCustomer} onUpdatePayment={function (booking: any, paymentData: any): void {
-          throw new Error("Function not implemented.")
-        }} />
+        onMessageCustomer={handleMessageCustomer}
+        onCancelWithRefund={handleCancelWithRefund}
+        onUpdatePayment={handleUpdatePayment} />
 
       <ConfirmActionDialog
         isOpen={isConfirmDialogOpen}
@@ -438,6 +475,13 @@ export default function BookingsPage() {
         setIsOpen={setIsAssignDialogOpen}
         booking={selectedBooking}
         onAssign={handleAssignStaffSubmit}
+      />
+
+      <RefundCancellationDialog
+        isOpen={isRefundDialogOpen}
+        setIsOpen={setIsRefundDialogOpen}
+        booking={selectedBooking}
+        onCancelWithRefund={handleRefundSubmit}
       />
 
       <MessageCustomerDialog

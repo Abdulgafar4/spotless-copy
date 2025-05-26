@@ -135,7 +135,7 @@ export function AssignRoleDialog({
             </Select>
             
             {isRoleChanged && (
-              <div className="text-xs text-blue-600">
+              <div className="text-xs text-green-600">
                 Changing from {employee.role} to {selectedRole}
               </div>
             )}
@@ -163,7 +163,7 @@ export function AssignRoleDialog({
             </Select>
             
             {isBranchChanged && (
-              <div className="text-xs text-blue-600">
+              <div className="text-xs text-green-600">
                 Changing from {employee.branch} to {selectedBranch}
               </div>
             )}

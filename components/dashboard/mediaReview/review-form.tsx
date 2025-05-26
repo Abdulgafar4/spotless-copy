@@ -195,25 +195,25 @@ export function ReviewForm({ appointments, onSubmit }: ReviewFormProps) {
         />
 
         {selectedAppointment && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-green-200 bg-green-50">
             <CardContent className="p-4">
               <h3 className="font-medium mb-3">Appointment Details</h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <CalendarIcon className="h-4 w-4 text-blue-500" />
+                  <CalendarIcon className="h-4 w-4 text-green-500" />
                   <span>{formatDate(selectedAppointment.date)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-blue-500" />
+                  <Clock className="h-4 w-4 text-green-500" />
                   <span>{selectedAppointment.time}</span>
                 </div>
                 {selectedAppointment.staff_assigned && selectedAppointment.staff_assigned.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-sm text-blue-600 font-medium">Staff who provided service:</p>
+                    <p className="text-sm text-green-600 font-medium">Staff who provided service:</p>
                     <ul className="mt-1 space-y-1">
                       {selectedAppointment.staff_assigned.map((staff, index) => (
                         <li key={index} className="flex items-center gap-2 text-sm">
-                          <User className="h-3 w-3 text-blue-500" />
+                          <User className="h-3 w-3 text-green-500" />
                           <span>{staff}</span>
                         </li>
                       ))}

@@ -100,7 +100,7 @@ export function ReviewHistory({ reviews }: ReviewHistoryProps) {
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
               <div>
-                <Badge className="bg-blue-100 text-blue-800 mb-2">
+                <Badge className="bg-green-100 text-green-800 mb-2">
                   {review.appointment?.service_type || "Service"}
                 </Badge>
                 <h3 className="font-bold">Review for {review.staff_name}</h3>
@@ -141,7 +141,7 @@ export function ReviewHistory({ reviews }: ReviewHistoryProps) {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="mt-3 text-blue-600"
+              className="mt-3 text-green-600"
               onClick={() => setSelectedReview(review)}
             >
               View Details

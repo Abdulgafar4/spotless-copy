@@ -197,7 +197,7 @@ export default function InquiriesPage() {
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'new':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">New</Badge>
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">New</Badge>
       case 'in-progress':
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">In Progress</Badge>
       case 'resolved':
@@ -242,13 +242,13 @@ export default function InquiriesPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-green-50 border-green-200">
             <CardHeader className="py-4">
-              <CardTitle className="text-blue-700 text-lg">New</CardTitle>
+              <CardTitle className="text-green-700 text-lg">New</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{countByStatus.new || 0}</div>
-              <p className="text-sm text-blue-600">Unassigned inquiries</p>
+              <div className="text-3xl font-bold text-green-600">{countByStatus.new || 0}</div>
+              <p className="text-sm text-green-600">Unassigned inquiries</p>
             </CardContent>
           </Card>
           

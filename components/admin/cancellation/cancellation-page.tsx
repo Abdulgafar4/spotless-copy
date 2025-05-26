@@ -264,7 +264,7 @@ export default function CancellationsPage() {
               title: "Total Refunded",
               value: formatCurrency(totalRefundedAmount),
               description: `Pending: ${formatCurrency(potentialRefundAmount)}`,
-              className: "border-blue-200 bg-blue-50"
+              className: "border-green-200 bg-green-50"
             }
           ].map(({ title, value, description, className }) => (
             <Card key={title} className={className}>

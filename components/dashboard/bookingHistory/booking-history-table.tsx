@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { BookingDetailsDialog } from "./booking-details-dialog";
 import { useClientServices } from "@/hooks/use-client-service";
+import { formatShortDate } from "@/lib/utils";
 
 interface BookingHistoryTableProps {
   bookings: Booking[];
@@ -43,7 +44,7 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
       label: "Completed"
     },
     confirmed: {
-      className: "bg-blue-100 text-blue-800 border-blue-200",
+      className: "bg-green-100 text-green-800 border-green-200",
       label: "Confirmed"
     },
     pending: {
@@ -60,23 +61,6 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
-  const formatTime = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      hour: 'numeric', 
-          minute: 'numeric',
-          hour12: true
-    };
-    return new Date(dateString).toLocaleTimeString('en-US', options);
-  };
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null || amount === undefined) return "N/A";
@@ -120,8 +104,7 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
                 <TableCell className="font-medium">#{booking.reference_number}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span>{formatDate(booking.date)}</span>
-                    <span className="text-xs text-gray-500">{formatTime(booking.date)}</span>
+                    <span>{formatShortDate(booking.date)}</span>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell max-w-[200px] truncate">
@@ -133,14 +116,14 @@ export function BookingHistoryTable({ bookings }: BookingHistoryTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  {`${formatCurrency(price)}/hr`}
+                  {`${formatCurrency(price)}`}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleViewDetails(booking)}
-                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                    className="text-green-600 hover:text-green-800 hover:bg-green-50"
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">View</span>

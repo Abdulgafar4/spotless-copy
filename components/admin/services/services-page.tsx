@@ -51,7 +51,7 @@ const StatusBadge: React.FC<ServiceStatusBadgeProps> = ({ status }) => {
       label: "Inactive",
     },
     seasonal: {
-      className: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+      className: "bg-green-100 text-green-800 hover:bg-green-100",
       label: "Seasonal",
     },
   };

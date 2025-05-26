@@ -285,7 +285,7 @@ export default function CustomersPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <User className="h-8 w-8 text-blue-500 mr-3" />
+                <User className="h-8 w-8 text-green-500 mr-3" />
                 <div className="text-3xl font-bold">{customers.length}</div>
               </div>
             </CardContent>

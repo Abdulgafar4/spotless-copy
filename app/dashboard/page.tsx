@@ -11,6 +11,7 @@ import { useClientAppointments } from "@/hooks/use-client-appointments";
 import { useRouter } from "next/navigation";
 import { useClientServices } from "@/hooks/use-client-service";
 import { useClientBookings } from "@/hooks/use-client-bookings";
+import { formatShortDate } from "@/lib/utils";
 
 interface Booking {
   id: string;
@@ -36,14 +37,10 @@ export default function DashboardPage() {
   const formattedAppointments = upcomingAppointments.map((apt, index) => ({
     id: parseInt(apt.id),
     title: apt.service_type || `Appointment ${index + 1}`,
-    date: new Date(apt.date).toLocaleDateString('en-US', {
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric'
-    }),
+    date: formatShortDate(apt.date),
     time: new Date(apt.date).toLocaleTimeString('en-US', {
-      hour: 'numeric', 
-      minute: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit', 
       hour12: true
     }),
   }));
@@ -66,13 +63,7 @@ export default function DashboardPage() {
       
       return {
         id: apt.id,
-        date: new Date(apt.date).toLocaleDateString('en-US', { 
-          day: 'numeric',
-          month: 'short',
-          hour: 'numeric', 
-          minute: 'numeric',
-          hour12: true
-        }),
+        date: formatShortDate(apt.date),
         status: status,
         refId: apt.reference_number
       };

@@ -91,6 +91,10 @@ interface Booking {
   start_time?: string;
   end_time?: string;
   staff_id?: string;
+  refund_amount?: string | number;
+  cancellationReason?: string;
+  stripe_payment_intent_id?: string;
+
 }
 
 interface StatusBadge {

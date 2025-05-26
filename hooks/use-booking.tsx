@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useNotifications } from "./use-notifications";
 
 interface UseBookingsReturn {
   bookings: Booking[];
@@ -14,18 +15,28 @@ interface UseBookingsReturn {
   updateBookingStatus: (id: string, status: BookingStatus) => Promise<Booking>;
   assignStaffToBooking: (id: string, staffIds: string[]) => Promise<Booking>;
   updateOverdueBookings: () => Promise<void>;
+  updatePayment: (bookingId: string, paymentData: any) => Promise<Booking>; // Add this line
+
   isAuthorized: boolean;
   canCreate: boolean;
   canViewAll: boolean;
   canViewPersonal: boolean;
   canUpdate: boolean;
   canDelete: boolean;
+  cancelBookingWithRefund: (
+    bookingId: string,
+    reason: string,
+    refundType?: 'full' | 'partial' | 'none',
+    customRefundAmount?: number
+  ) => Promise<boolean>;
+
 }
 
 export const useAdminBookings = (): UseBookingsReturn => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const { sendBookingCancellation, sendFinalConfirmation } = useNotifications();
 
   // Get auth context with loading state
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -335,48 +346,90 @@ export const useAdminBookings = (): UseBookingsReturn => {
   );
 
   // Update booking status specifically
-  const updateBookingStatus = useCallback(
-    async (id: string, status: BookingStatus): Promise<Booking> => {
-      if (authLoading) {
-        throw new Error("Authentication is still loading");
+ const updateBookingStatus = useCallback(
+  async (id: string, status: BookingStatus): Promise<Booking> => {
+    if (authLoading) {
+      throw new Error("Authentication is still loading");
+    }
+    if (!isAdmin) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+    
+    try {
+      setLoading(true);
+      const { data, error: supabaseError } = await supabase
+        .from("bookings")
+        .update({ status })
+        .eq("id", id)
+        .select();
+        
+      if (supabaseError) {
+        throw supabaseError;
       }
-
-      if (!isAdmin) {
-        throw new Error("Unauthorized: Admin access required");
-      }
-
+      
+      const updatedBooking = data[0] as Booking;
+      
+      // Send emails with proper error handling
       try {
-        setLoading(true);
-        const { data, error: supabaseError } = await supabase
-          .from("bookings")
-          .update({ status })
-          .eq("id", id)
-          .select();
-
-        if (supabaseError) {
-          throw supabaseError;
+        if (status === 'confirmed') {
+          console.log('Sending confirmation email...');
+          await sendFinalConfirmation({
+            booking_id: updatedBooking.refId || id,
+            user_email: updatedBooking.customerEmail,
+            booking_details: {
+              customerName: updatedBooking.customerName,
+              service: updatedBooking.service,
+              date: updatedBooking.date,
+              address: updatedBooking.address,
+              amount: updatedBooking.amount,
+              assignedStaff: updatedBooking.assignedStaff
+            }
+          });
+          console.log('Confirmation email sent successfully');
+        } else {
+          console.log('Sending cancellation email...');
+          await sendBookingCancellation({
+            booking_id: updatedBooking.refId || id,
+            user_email: updatedBooking.customerEmail,
+            reason: updatedBooking.cancellationReason || "Booking cancelled by admin",
+            booking_details: {
+              customerName: updatedBooking.customerName,
+              service: updatedBooking.service,
+              date: updatedBooking.date,
+              address: updatedBooking.address,
+              amount: updatedBooking.amount
+            },
+            refund_amount: typeof updatedBooking.refund_amount === "number"
+              ? updatedBooking.refund_amount
+              : updatedBooking.refund_amount
+              ? Number(updatedBooking.refund_amount)
+              : 0
+          });
+          console.log('Cancellation email sent successfully');
         }
-
-        const updatedBooking = data[0] as Booking;
-
-        setBookings((prev) =>
-          prev.map((booking) => (booking.id === id ? updatedBooking : booking))
-        );
-
-        return updatedBooking;
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("An unknown error occurred")
-        );
-        console.error("Failed to update booking status:", err);
-        throw err;
-      } finally {
-        setLoading(false);
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        // Don't throw here - we still want to update the booking status
+        // Just log the error and optionally show a warning to the user
       }
-    },
-    [isAdmin, authLoading]
-  );
-
+      
+      setBookings((prev) =>
+        prev.map((booking) => (booking.id === id ? updatedBooking : booking))
+      );
+      
+      return updatedBooking;
+    } catch (err) {
+      setError(
+        err instanceof Error ? err : new Error("An unknown error occurred")
+      );
+      console.error("Failed to update booking status:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  },
+  [isAdmin, authLoading]
+);
   // Assign staff to a booking
   const assignStaffToBooking = useCallback(
     async (id: string, staffNames: string[]): Promise<Booking> => {
@@ -496,6 +549,155 @@ export const useAdminBookings = (): UseBookingsReturn => {
     [isAdmin, isClient, userId, authLoading]
   );
 
+  const cancelBookingWithRefund = useCallback(
+    async (
+      bookingId: string,
+      reason: string,
+      refundType: 'full' | 'partial' | 'none' = 'full',
+      customRefundAmount?: number
+    ): Promise<boolean> => {
+
+      if (authLoading) {
+        throw new Error("Authentication is still loading");
+      }
+
+      if (!isAdmin) {
+        throw new Error("Unauthorized: Admin access required");
+      }
+
+      try {
+        setLoading(true);
+
+        // Get current booking details
+        const { data: currentBooking, error: fetchError } = await supabase
+          .from("bookings")
+          .select("*")
+          .eq("id", bookingId)
+          .single();
+
+        if (fetchError || !currentBooking) {
+          throw new Error("Booking not found");
+        }
+
+        // Calculate refund amount based on type
+        let refundAmount = 0;
+
+        if (refundType === 'full') {
+          refundAmount = currentBooking.payment_amount || currentBooking.total_amount || 0;
+        } else if (refundType === 'partial' && customRefundAmount) {
+          refundAmount = customRefundAmount;
+        }
+        // refundType === 'none' results in refundAmount = 0
+
+        console.log(`💰 Cancelling booking ${currentBooking.reference_number}:`, {
+          refundType,
+          refundAmount,
+          reason
+        });
+
+        // Process refund through API
+        const refundResponse = await fetch('/api/payments/process-refund', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking_id: currentBooking.reference_number,
+            reason: reason,
+            refund_amount: refundAmount,
+            admin_id: user?.id,
+            refund_type: refundType
+          })
+        });
+
+        if (!refundResponse.ok) {
+          const errorData = await refundResponse.json();
+          throw new Error(errorData.error || 'Refund processing failed');
+        }
+
+        const refundResult = await refundResponse.json();
+        console.log('✅ Refund processed:', refundResult);
+
+        // Send cancellation email to customer
+        await sendBookingCancellation({
+          booking_id: currentBooking.reference_number,
+          user_email: currentBooking.customer_email,
+          reason: reason,
+          booking_details: {
+            customerName: currentBooking.customer_name,
+            service: currentBooking.service_type,
+            date: currentBooking.date,
+            address: currentBooking.address,
+            amount: currentBooking.total_amount
+          },
+          refund_amount: refundAmount
+        });
+
+        // Refresh bookings list
+        await fetchBookings();
+
+        return true;
+
+      } catch (error) {
+        console.error("❌ Failed to cancel booking with refund:", error);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAdmin, user?.id, authLoading, sendBookingCancellation, fetchBookings]
+  );
+
+  const updatePayment = useCallback(
+    async (bookingId: string, paymentData: any): Promise<Booking> => {
+      if (authLoading) {
+        throw new Error("Authentication is still loading");
+      }
+
+      if (!isAdmin) {
+        throw new Error("Unauthorized: Admin access required");
+      }
+
+      try {
+        setLoading(true);
+
+        // Update the booking with new payment information
+        const { data, error: supabaseError } = await supabase
+          .from("bookings")
+          .update({
+            payment_amount: paymentData.payment_amount,
+            payment_status: paymentData.payment_status,
+            total_amount: paymentData.total_amount,
+            payment_notes: paymentData.payment_note,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", bookingId)
+          .select();
+
+        if (supabaseError) {
+          throw supabaseError;
+        }
+
+        const updatedBooking = data[0] as Booking;
+
+        // Update local state
+        setBookings((prev) =>
+          prev.map((booking) => (booking.id === bookingId ? updatedBooking : booking))
+        );
+
+        return updatedBooking;
+      } catch (err) {
+        setError(
+          err instanceof Error ? err : new Error("An unknown error occurred")
+        );
+        console.error("Failed to update payment:", err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAdmin, authLoading]
+  );
+
+
   // Initialize by fetching bookings only after auth loading is complete
   useEffect(() => {
     if (!authLoading) {
@@ -540,6 +742,8 @@ export const useAdminBookings = (): UseBookingsReturn => {
     canUpdate,
     canDelete,
     updateOverdueBookings,
+    cancelBookingWithRefund,
+    updatePayment,
   };
 };
 

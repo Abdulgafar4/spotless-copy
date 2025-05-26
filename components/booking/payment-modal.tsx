@@ -15,6 +15,8 @@ import { AlertTriangle, CreditCard, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { StripePaymentWrapper } from "./stripe-payment-integration"
+import { useNotifications } from "@/hooks/use-notifications"
+import { generateUniqueFileName } from "@/lib/uploadUtils"
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -24,8 +26,8 @@ interface PaymentModalProps {
   formatCurrency: (amount: number) => string;
   paymentOption: "full" | "deposit";
   totalAmount: number;
-  bookingData: any; 
-  files: File[]; 
+  bookingData: any;
+  files: File[];
 }
 
 export function PaymentModal({
@@ -41,87 +43,29 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [bookingCreated, setBookingCreated] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+
+
+  const { sendBookingSubmissionEmails, sendPaymentConfirmation } = useNotifications();
 
   // Initialize payment intent when modal opens
   useEffect(() => {
-    if (isOpen && !clientSecret && !bookingCreated) {
-      createBookingAndInitializePayment()
+    if (isOpen && !clientSecret) {
+      initializePaymentOnly()
     }
-  }, [isOpen, clientSecret, bookingCreated])
+  }, [isOpen, clientSecret])
 
   // Create booking record and initialize Stripe payment
-  const createBookingAndInitializePayment = async () => {
+  const initializePaymentOnly = async () => {
     setIsProcessing(true)
     setPaymentError(null)
 
     try {
-      // First create the booking record with "pending" status
-      const { data: bookingResult, error: bookingError } = await supabase
-        .from("bookings")
-        .insert([{ 
-          ...bookingData,
-          status: "pending",
-          payment_status: "pending" 
-        }])
-        .select()
+      console.log('🔄 Initializing payment intent only...')
 
-      if (bookingError) {
-        throw bookingError
-      }
-
-      setBookingCreated(true)
-
-      // Upload property photos and track URLs
-      let imageUrls = [];
-      if (files.length > 0) {
-        const uploadPromises = files.map(file => {
-          return supabase.storage.from("bookings").upload("booking-images", file)
-        })
-
-        try {
-          const uploadResults = await Promise.all(uploadPromises)
-          
-          // Generate public URLs for each uploaded file
-          for (let i = 0; i < uploadResults.length; i++) {
-            const result = uploadResults[i]
-            if (!result.error) {
-              const path = `booking-images/${files[i].name}`
-              const { data: urlData } = supabase.storage.from("bookings").getPublicUrl(path)
-              if (urlData?.publicUrl) {
-                imageUrls.push(urlData.publicUrl)
-              }
-            }
-          }
-          
-          // Update the booking with image URLs
-          if (imageUrls.length > 0) {
-            const { error: updateError } = await supabase
-              .from("bookings")
-              .update({ images: imageUrls })
-              .eq("reference_number", bookingRef)
-              
-            if (updateError) {
-              console.error("Error updating booking with image URLs:", updateError)
-            }
-          }
-          
-          const uploadErrors = uploadResults
-            .filter(result => result.error)
-            .map(result => result.error)
-
-          if (uploadErrors.length > 0) {
-            console.error("Some files failed to upload:", uploadErrors)
-          }
-        } catch (uploadError) {
-          console.error("Error uploading files:", uploadError)
-          // Continue anyway - booking is more important than photos
-        }
-      }
-
-      // Initialize Stripe payment intent
+      // Initialize Stripe payment intent WITHOUT creating booking
       const response = await fetch("/api/payments/create-intent", {
         method: "POST",
         headers: {
@@ -143,10 +87,15 @@ export function PaymentModal({
 
       const data = await response.json()
       setClientSecret(data.clientSecret)
+      setPaymentIntentId(data.paymentIntentId) // Store payment intent ID
+
+
+      console.log('✅ Payment intent created:', data.clientSecret?.substring(0, 20) + '...')
+
     } catch (error) {
-      console.error("Booking/payment initialization error:", error)
-      setPaymentError(typeof error === 'object' && error !== null && 'message' in error 
-        ? (error as Error).message 
+      console.error("❌ Payment initialization error:", error)
+      setPaymentError(typeof error === 'object' && error !== null && 'message' in error
+        ? (error as Error).message
         : "Failed to initialize payment. Please try again.")
       toast.error("Failed to initialize payment. Please try again.")
     } finally {
@@ -154,12 +103,158 @@ export function PaymentModal({
     }
   }
 
+  // Create booking and upload files ONLY after successful payment
+  const createBookingAfterPayment = async () => {
+    console.log('💾 Creating booking after successful payment...')
+
+    try {
+      // Create the booking record with "pending_review" status
+      const { data: bookingResult, error: bookingError } = await supabase
+        .from("bookings")
+        .insert([{
+          ...bookingData,
+          status: "pending", // Changed: await admin review
+          payment_status: "paid",   // Payment is confirmed
+          stripe_payment_intent_id: paymentIntentId // Store for refunds
+
+        }])
+        .select()
+
+      if (bookingError) {
+        throw bookingError
+      }
+
+      console.log('✅ Booking created:', bookingResult[0].id)
+
+      // Upload property photos and track URLs
+      let imageUrls = [];
+      let uploadSuccessCount = 0;
+
+      if (files.length > 0) {
+        console.log(`📸 Uploading ${files.length} files with unique names...`)
+
+        // Process each file individually for better error handling
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+
+          try {
+            // Generate completely unique filename
+            const uniqueFileName = generateUniqueFileName(file, bookingRef, i);
+            const uniquePath = `booking-images/${uniqueFileName}`;
+
+            console.log(`📤 Uploading file ${i + 1}/${files.length}: ${uniquePath}`);
+
+            // Upload with unique path
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from("bookings")
+              .upload(uniquePath, file, {
+                cacheControl: '3600',
+                upsert: false // Prevent overwriting
+              });
+
+            if (uploadError) {
+              console.error(`❌ Upload failed for file ${i + 1}:`, uploadError);
+              continue; // Skip this file but continue with others
+            }
+
+            if (uploadData) {
+              // Generate public URL
+              const { data: urlData } = supabase.storage
+                .from("bookings")
+                .getPublicUrl(uploadData.path);
+
+              if (urlData?.publicUrl) {
+                imageUrls.push(urlData.publicUrl);
+                uploadSuccessCount++;
+                console.log(`✅ File ${i + 1} uploaded successfully: ${urlData.publicUrl}`);
+              }
+            }
+
+          } catch (fileError) {
+            console.error(`❌ Error processing file ${i + 1}:`, fileError);
+            continue;
+          }
+        }
+
+        console.log(`📊 Upload summary: ${uploadSuccessCount}/${files.length} files uploaded successfully`);
+
+        // Update booking with image URLs
+        if (imageUrls.length > 0) {
+          const { error: updateError } = await supabase
+            .from("bookings")
+            .update({
+              images: imageUrls,
+            })
+            .eq("reference_number", bookingRef);
+
+          if (updateError) {
+            console.error("❌ Error updating booking with image URLs:", updateError);
+          } else {
+            console.log(`✅ Booking updated with ${imageUrls.length} image URLs`);
+          }
+        }
+      }
+
+      // Send emails after successful booking creation
+      console.log('📧 Sending notification emails...')
+
+      await Promise.all([
+        sendBookingSubmissionEmails({
+          booking_id: bookingRef,
+          user_email: bookingData.customer_email,
+          admin_email: 'etzteemmytee0@gmail.com',
+          booking_details: {
+            customerName: bookingData.customer_name,
+            service: bookingData.service_type,
+            date: bookingData.date,
+            address: bookingData.address,
+            amount: bookingData.total_amount,
+            imagesCount: imageUrls.length
+          }
+        }),
+
+        sendPaymentConfirmation({
+          booking_id: bookingRef,
+          user_email: bookingData.customer_email,
+          payment_details: { amount: paymentAmount },
+          booking_details: {
+            service: bookingData.service_type,
+            date: bookingData.date,
+            customerName: bookingData.customer_name
+          }
+        })
+      ]);
+      console.log('✅ All emails sent successfully')
+      return true
+
+    } catch (error) {
+      console.error("❌ Error creating booking after payment:", error)
+      toast.error("Payment successful but booking creation failed. Please contact support.")
+      return false
+    }
+  }
 
   // Handle payment success
-  const handlePaymentSuccess = () => {
-    toast.success("Payment successful! Your booking is confirmed.")
-    router.push("/dashboard/booking-confirmation?ref=" + bookingRef)
-    onClose()
+  const handlePaymentSuccess = async () => {
+    console.log('🎉 Payment successful! Creating booking...')
+
+    setIsProcessing(true)
+
+    try {
+      // Create booking and send emails after successful payment
+      const bookingCreated = await createBookingAfterPayment()
+
+      if (bookingCreated) {
+        toast.success("Payment successful! Your booking is submitted for admin review.")
+        router.push("/dashboard/booking-confirmation?ref=" + bookingRef)
+        onClose()
+      }
+    } catch (error) {
+      console.error("Error handling payment success:", error)
+      toast.error("Payment successful but there was an issue. Please contact support.")
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   // Handle payment error
@@ -255,10 +350,10 @@ export function PaymentModal({
           >
             Cancel
           </Button>
-          
+
           {!clientSecret && !isProcessing && (
             <Button
-              onClick={createBookingAndInitializePayment}
+              onClick={initializePaymentOnly}
               className="bg-[#10b981] hover:bg-[#0d9668] text-white sm:w-auto w-full"
               disabled={isProcessing}
             >

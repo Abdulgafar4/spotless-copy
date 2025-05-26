@@ -150,7 +150,7 @@ export function FeedbackDetailsDialog({
                   </div>
                   <div className="flex items-center text-sm">
                     <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                    <a href={`mailto:${feedback.user_email}`} className="text-blue-600 hover:underline">
+                    <a href={`mailto:${feedback.user_email}`} className="text-green-600 hover:underline">
                       {feedback.user_email}
                     </a>
                   </div>

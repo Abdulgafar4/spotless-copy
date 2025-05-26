@@ -15,7 +15,7 @@ const formatTime = (dateString: string) => format(new Date(dateString), "h:mm a"
 const getStatusBadge = (status: string) => {
   const statusColors: Record<string, StatusBadge> = {
     "pending": { bg: "bg-yellow-100", text: "text-yellow-800", label: "Pending" },
-    "confirmed": { bg: "bg-blue-100", text: "text-blue-800", label: "Confirmed" },
+    "confirmed": { bg: "bg-green-100", text: "text-green-800", label: "Confirmed" },
     "in-progress": { bg: "bg-purple-100", text: "text-purple-800", label: "In Progress" },
     "completed": { bg: "bg-green-100", text: "text-green-800", label: "Completed" },
     "cancelled": { bg: "bg-gray-100", text: "text-gray-800", label: "Cancelled" },

@@ -117,7 +117,7 @@ export function EmployeeDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Email Address</h3>
                 <p className="text-base flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-400" />
-                  <a href={`mailto:${employee.email}`} className="text-blue-600 hover:underline">
+                  <a href={`mailto:${employee.email}`} className="text-green-600 hover:underline">
                     {employee.email}
                   </a>
                 </p>
@@ -127,7 +127,7 @@ export function EmployeeDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
                 <p className="text-base flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-400" />
-                  <a href={`tel:${employee.phone}`} className="text-blue-600 hover:underline">
+                  <a href={`tel:${employee.phone}`} className="text-green-600 hover:underline">
                     {employee.phone}
                   </a>
                 </p>
@@ -246,7 +246,7 @@ export function EmployeeDetailsDialog({
               {employee.skills && employee.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {employee.skills.map((skill: string) => (
-                    <Badge key={skill} className="bg-blue-100 text-blue-800">
+                    <Badge key={skill} className="bg-green-100 text-green-800">
                       {skill}
                     </Badge>
                   ))}

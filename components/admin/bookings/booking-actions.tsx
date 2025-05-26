@@ -1,4 +1,4 @@
-import { CalendarCheck, CalendarClock, CalendarX, Check, Clock, MessageSquare, MoreHorizontal, User, X } from "lucide-react"
+import { CalendarCheck, CalendarClock, CalendarX, Check, Clock, MessageSquare, MoreHorizontal, User, X, CreditCard } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,13 +9,24 @@ import {
   } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 
+interface BookingActionsProps {
+  booking: any;
+  onViewBooking: (booking: any) => void;
+  onUpdateStatus: (booking: any, status: string) => void;
+  onAssignStaff: (booking: any) => void;
+  onMessageCustomer: (booking: any) => void;
+  onCancelWithRefund: (booking: any) => void; // Add this new prop
+}
+
 export const BookingActions: React.FC<BookingActionsProps> = ({ 
     booking, 
     onViewBooking, 
     onUpdateStatus, 
     onAssignStaff, 
-    onMessageCustomer 
+    onMessageCustomer,
+    onCancelWithRefund // Add this
   }) => {
+    
     const actionsByStatus: Record<string, BookingAction[]> = {
       "pending": [
         { 
@@ -25,10 +36,24 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
           action: () => onUpdateStatus(booking, "confirmed") 
         },
         { 
-          label: "Reject Booking", 
-          icon: X, 
+          label: "Cancel with Refund", 
+          icon: CreditCard, 
           color: "text-red-500", 
-          action: () => onUpdateStatus(booking, "cancelled") 
+          action: () => onCancelWithRefund(booking) 
+        }
+      ],
+      "pending_review": [
+        { 
+          label: "Confirm Booking", 
+          icon: Check, 
+          color: "text-green-500", 
+          action: () => onUpdateStatus(booking, "confirmed") 
+        },
+        { 
+          label: "Cancel with Refund", 
+          icon: CreditCard, 
+          color: "text-red-500", 
+          action: () => onCancelWithRefund(booking) 
         }
       ],
       "confirmed": [
@@ -39,10 +64,10 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
           action: () => onAssignStaff(booking) 
         },
         { 
-          label: "Cancel Booking", 
-          icon: CalendarX, 
+          label: "Cancel with Refund", 
+          icon: CreditCard, 
           color: "text-red-500", 
-          action: () => onUpdateStatus(booking, "cancelled") 
+          action: () => onCancelWithRefund(booking) 
         }
       ],
       "in-progress": [

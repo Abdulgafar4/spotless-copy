@@ -236,13 +236,13 @@ export function RescheduleHistory({ requests }: RescheduleHistoryProps) {
               
               <div>
                 <h4 className="text-sm font-medium text-gray-500">Requested New Schedule</h4>
-                <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-100 space-y-2">
+                <div className="mt-2 p-3 bg-green-50 rounded-md border border-green-100 space-y-2">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-blue-500" />
+                    <Calendar className="h-4 w-4 text-green-500" />
                     <span className="font-medium">{formatShortDate(selectedRequest.requested_date)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-500" />
+                    <Clock className="h-4 w-4 text-green-500" />
                     <span>{formatTimeForDisplay(selectedRequest.requested_time)}</span>
                   </div>
                 </div>

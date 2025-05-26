@@ -20,11 +20,11 @@ import { ServiceInfoForm } from "./service-info-form"
 import { PropertyDetailsForm } from "./property-details-form"
 import { FileUpload } from "./file-upload"
 import { PriceBreakdown } from "./price-breakdown"
-import { PaymentOptions } from "./payment-options"
 import { PaymentModal } from "./payment-modal"
 import { calculatePrice } from "./price-calculator"
 import { FormStepIndicator, Step } from "./form-step-indicator"
 import { StepControls } from "./step-controls"
+import { PaymentOptions } from "./payment-options"
 
 // Import types
 import { bookingFormSchema, BookingFormValues, Branch, Service, PriceBreakdownItem } from "./booking-types"
@@ -49,26 +49,25 @@ export function MainBookingForm() {
   const [currentStep, setCurrentStep] = useState(0)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [isFormSubmitting, setIsFormSubmitting] = useState(false)
-  
+
   // File upload state
   const [files, setFiles] = useState<File[]>([])
-  
+
   // Payment and booking state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [currentBookingId, setCurrentBookingId] = useState<string>("")
-  // Add the missing state variable to store booking data
   const [bookingFormData, setBookingFormData] = useState<any>(null)
-  
+
   // Pricing state
   const [totalPrice, setTotalPrice] = useState<any>(0)
   const [priceBreakdown, setPriceBreakdown] = useState<PriceBreakdownItem[]>([])
   const [finalPaymentAmount, setFinalPaymentAmount] = useState<number>(0)
-  
+
   // Service data state
   const [branches, setBranches] = useState<Branch[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [servicesLoading, setServicesLoading] = useState(true)
-  
+
   // Get URL parameters
   const serviceParam = searchParams.get("service")
   const branchParam = searchParams.get("branch")
@@ -152,19 +151,19 @@ export function MainBookingForm() {
         formValues,
         services
       })
-      
+
       setTotalPrice(totalPrice)
       setPriceBreakdown(priceBreakdown)
       setFinalPaymentAmount(finalPaymentAmount)
     }
-    
+
     updatePrice()
-    
+
     // Subscribe to form value changes
     const subscription = form.watch(() => {
       updatePrice()
     })
-    
+
     return () => subscription.unsubscribe()
   }, [form, services])
 
@@ -176,14 +175,59 @@ export function MainBookingForm() {
     }).format(amount)
   }
 
+  // Payment Options Helper Functions
+  const calculateOriginalAmount = () => {
+    const formValues = form.getValues()
+
+    if (!formValues.service) return 0
+
+    // Use the price calculator to get original amount (before discount)
+    const { totalPrice } = calculatePrice({
+      formValues: {
+        ...formValues,
+        paymentOption: "deposit" // Use deposit to get original price without discount
+      },
+      services
+    })
+
+    return totalPrice
+  }
+
+  const calculateDepositAmount = () => {
+    return calculateOriginalAmount() * 0.7
+  }
+
+  const calculateFullPaymentAmount = () => {
+    const formValues = form.getValues()
+
+    if (!formValues.service) return 0
+
+    // Use the price calculator to get discounted full amount
+    const { finalPaymentAmount } = calculatePrice({
+      formValues: {
+        ...formValues,
+        paymentOption: "full"
+      },
+      services
+    })
+
+    return finalPaymentAmount
+  }
+
+  // Handle payment option change
+  const handlePaymentOptionChange = (option: "full" | "deposit") => {
+    form.setValue("paymentOption", option)
+    // The useEffect will automatically recalculate prices
+  }
+
   // Step validation
   const validateFields = async (fields: (keyof BookingFormValues)[]) => {
     const result = await form.trigger(fields)
-    
+
     if (!result) {
       toast.error("Please complete all required fields before continuing")
     }
-    
+
     return result
   }
 
@@ -191,7 +235,7 @@ export function MainBookingForm() {
   const goToNextStep = async (): Promise<boolean> => {
     // Validate current step fields
     let isValid = true
-    
+
     switch (currentStep) {
       case 0: // Personal Info
         isValid = await validateFields(['firstName', 'lastName', 'email', 'phone'])
@@ -217,21 +261,21 @@ export function MainBookingForm() {
         // Submit the form
         return await handleSubmitForm()
     }
-    
+
     if (isValid) {
       // Mark step as completed
       if (!completedSteps.includes(currentStep)) {
         setCompletedSteps([...completedSteps, currentStep])
       }
-      
+
       // Move to next step
       setCurrentStep(prev => prev + 1)
       return true
     }
-    
+
     return false
   }
-  
+
   // Step navigation: Go to previous step
   const goToPreviousStep = () => {
     setCurrentStep(prev => Math.max(0, prev - 1))
@@ -241,7 +285,7 @@ export function MainBookingForm() {
   const handleSubmitForm = async (): Promise<boolean> => {
     try {
       setIsFormSubmitting(true)
-      
+
       // Validate all fields
       const isValid = await form.trigger()
       if (!isValid) {
@@ -249,16 +293,16 @@ export function MainBookingForm() {
         setIsFormSubmitting(false)
         return false
       }
-      
+
       // Check if photos are uploaded
       if (files.length === 0) {
         toast.error("Please upload at least one property photo")
         setIsFormSubmitting(false)
         return false
       }
-      
+
       const data = form.getValues()
-      
+
       // Get user ID from auth context or use fallback
       const userId = user?.id || '28c45a61-4cd8-42e6-98cf-cdb7a7aa7475'
       const fullAddress = `${data.street}, ${data.postalCode}`
@@ -291,8 +335,8 @@ export function MainBookingForm() {
 
       // Determine payment amount based on option (70% deposit or full amount)
       const paymentAmount = data.paymentOption === "deposit"
-        ? totalPrice * 0.7  // 70% deposit
-        : totalPrice        // Full amount with 5% discount already applied
+        ? calculateDepositAmount()  // 70% deposit
+        : calculateFullPaymentAmount()  // Full amount with 5% discount
 
       // Store all necessary booking data in state for later use after payment
       setBookingFormData({
@@ -306,7 +350,7 @@ export function MainBookingForm() {
         status: "confirmed", // Will be set to confirmed since payment will be processed
         payment_status: "paid",
         payment_option: data.paymentOption,
-        total_amount: totalPrice,
+        total_amount: data.paymentOption === "full" ? calculateFullPaymentAmount() : calculateOriginalAmount(),
         payment_amount: paymentAmount,
         property_details: propertyDetails,
         price_breakdown: priceBreakdown,
@@ -317,7 +361,7 @@ export function MainBookingForm() {
       })
 
       setCurrentBookingId(bookingRef)
-      
+
       // Show payment modal without creating the booking record yet
       setIsPaymentModalOpen(true)
       return true
@@ -336,10 +380,10 @@ export function MainBookingForm() {
     switch (currentStep) {
       case 0: // Personal Info
         return <PersonalInfoForm control={form.control} />
-      
+
       case 1: // Service Info
         return (
-          <ServiceInfoForm 
+          <ServiceInfoForm
             control={form.control}
             branches={branches}
             services={services}
@@ -347,10 +391,10 @@ export function MainBookingForm() {
             formatCurrency={formatCurrency}
           />
         )
-      
+
       case 2: // Property Details
         return <PropertyDetailsForm control={form.control} />
-      
+
       case 3: // Booking Date
         return (
           <>
@@ -374,13 +418,24 @@ export function MainBookingForm() {
             />
           </>
         )
-      
+
       case 4: // Photos & Notes
         return (
           <>
             <h3 className="text-lg font-semibold mb-4">Property Photos & Special Instructions</h3>
             <div className="space-y-4">
-              <FileUpload files={files} setFiles={setFiles} required={true} />
+              <FileUpload
+                files={files}
+                setFiles={setFiles}
+                required={true}
+                maxFiles={10}
+                title="Property Photos"
+                description="Upload clear photos of your property"
+                compact={false}
+                showPreview={true}
+                previewCols={2}
+                className="mb-4"
+              />
 
               <FormField
                 control={form.control}
@@ -401,26 +456,26 @@ export function MainBookingForm() {
             </div>
           </>
         )
-      
+
       case 5: // Review & Payment
         return (
           <>
             <h3 className="text-lg font-semibold mb-4">Review & Payment</h3>
-            
+
             <div className="space-y-6">
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                 <h4 className="font-medium">Booking Summary</h4>
-                
+
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="text-gray-600">Service:</div>
                   <div className="font-medium">{services.find(s => s.id === form.getValues("service"))?.name}</div>
-                  
+
                   <div className="text-gray-600">Date:</div>
                   <div className="font-medium">{form.getValues("date") ? formatShortDate(form.getValues("date")) : "Not selected"}</div>
-                  
+
                   <div className="text-gray-600">Address:</div>
                   <div className="font-medium">{form.getValues("street")}, {form.getValues("postalCode")}</div>
-                  
+
                   <div className="text-gray-600">Property:</div>
                   <div className="font-medium">
                     {form.getValues("bedrooms")} bedrooms, {form.getValues("bathrooms")} bathrooms
@@ -428,10 +483,10 @@ export function MainBookingForm() {
                     {form.getValues("garages") > 0 ? `, ${form.getValues("garages")} garages` : ""}
                     {form.getValues("den") ? ", includes den" : ""}
                   </div>
-                  
+
                   <div className="text-gray-600">Photos:</div>
                   <div className="font-medium">{files.length} uploaded</div>
-                  
+
                   {form.getValues("notes") && (
                     <>
                       <div className="text-gray-600">Notes:</div>
@@ -440,23 +495,33 @@ export function MainBookingForm() {
                   )}
                 </div>
               </div>
-              
-              <PriceBreakdown 
+
+              <PriceBreakdown
                 priceBreakdown={priceBreakdown}
                 totalPrice={totalPrice}
                 formatCurrency={formatCurrency}
               />
 
-              <PaymentOptions 
-                control={form.control}
-                totalPrice={totalPrice}
-                finalPaymentAmount={finalPaymentAmount}
+              {/* Updated PaymentOptions component usage */}
+              <PaymentOptions
+                selectedOption={form.getValues("paymentOption")}
+                onOptionChange={handlePaymentOptionChange}
+                calculateFullPaymentAmount={calculateFullPaymentAmount}
+                calculateDepositAmount={calculateDepositAmount}
+                calculateOriginalAmount={calculateOriginalAmount}
                 formatCurrency={formatCurrency}
+                showServiceCheck={true}
+                serviceSelected={!!form.getValues("service")}
+                className="mt-6"
+                fullPaymentLabel="Complete Payment"
+                depositLabel="Partial Payment"
+                fullPaymentDescription="Pay everything now with discount"
+                depositDescription="Pay most now, rest after service completion"
               />
             </div>
           </>
         )
-      
+
       default:
         return null
     }
@@ -466,17 +531,17 @@ export function MainBookingForm() {
     <>
       <Form {...form}>
         <form className="space-y-6 max-w-4xl mx-auto">
-          <FormStepIndicator 
-            steps={formSteps} 
+          <FormStepIndicator
+            steps={formSteps}
             currentStep={currentStep}
             completedSteps={completedSteps}
           />
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             {renderStepContent()}
           </div>
-          
-          <StepControls 
+
+          <StepControls
             currentStep={currentStep}
             totalSteps={formSteps.length}
             onPrevious={goToPreviousStep}
@@ -495,8 +560,8 @@ export function MainBookingForm() {
         formatCurrency={formatCurrency}
         paymentOption={form.getValues("paymentOption")}
         totalAmount={totalPrice}
-        bookingData={bookingFormData}  // Pass the booking data to the payment modal
-        files={files}  // Pass the files to the payment modal
+        bookingData={bookingFormData}
+        files={files}
       />
     </>
   )

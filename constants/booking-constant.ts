@@ -26,3 +26,5 @@ export  const BRANCH_OPTIONS: StatusOption[] = [
     { value: "etobicoke", label: "Etobicoke" },
   ]
   
+export const defaultSender =  'clever.metag@gmail.com';
+export const defaultSenderName = 'Spotless Transitions';

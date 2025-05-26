@@ -139,13 +139,13 @@ export function CustomerDetailsDialog({
             <div className="flex flex-col space-y-1 mt-1">
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <Mail className="h-4 w-4" /> 
-                <a href={`mailto:${customer.email}`} className="text-blue-600 hover:underline">
+                <a href={`mailto:${customer.email}`} className="text-green-600 hover:underline">
                   {customer.email}
                 </a>
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <Phone className="h-4 w-4" /> 
-                <a href={`tel:${customer.phone}`} className="text-blue-600 hover:underline">
+                <a href={`tel:${customer.phone}`} className="text-green-600 hover:underline">
                   {customer.phone}
                 </a>
               </div>

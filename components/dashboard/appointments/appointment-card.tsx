@@ -75,7 +75,7 @@ export function AppointmentCard({ appointment }: AppointmentCardProps) {
           </Button>
           <Button
             variant="outline"
-            className="sm:w-auto w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+            className="sm:w-auto w-full bg-green-50 text-green-600 hover:bg-green-100 border-green-200"
 
 
           >

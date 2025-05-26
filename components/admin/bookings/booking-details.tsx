@@ -50,6 +50,8 @@ interface BookingDetailsDialogProps {
   onAssignStaff: (booking: any) => void
   onMessageCustomer: (booking: any) => void
   onUpdatePayment: (booking: any, paymentData: any) => void
+  onCancelWithRefund?: (booking: any) => void
+
 }
 
 export function BookingDetailsDialog({
@@ -59,7 +61,8 @@ export function BookingDetailsDialog({
   onUpdateStatus,
   onAssignStaff,
   onMessageCustomer,
-  onUpdatePayment
+  onUpdatePayment,
+  onCancelWithRefund
 }: BookingDetailsDialogProps) {
   if (!booking) return null
 
@@ -70,6 +73,7 @@ export function BookingDetailsDialog({
   const [paymentStatus, setPaymentStatus] = useState(booking?.payment_status || "pending")
   const [totalAmount, setTotalAmount] = useState(booking?.amount || "0.00")
 
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A"
     try {
@@ -78,7 +82,7 @@ export function BookingDetailsDialog({
       return dateString || "N/A"
     }
   }
-  
+
   const formatTime = (dateString: string) => {
     if (!dateString) return "N/A"
     try {
@@ -113,7 +117,7 @@ export function BookingDetailsDialog({
   // Parse price breakdown if available
   const getPriceBreakdown = () => {
     if (!booking.price_breakdown) return []
-    
+
     try {
       if (typeof booking.price_breakdown === 'string') {
         return JSON.parse(booking.price_breakdown)
@@ -128,7 +132,7 @@ export function BookingDetailsDialog({
   // Parse property details if available
   const getPropertyDetails = () => {
     if (!booking.property_details) return null
-    
+
     try {
       if (typeof booking.property_details === 'string') {
         return JSON.parse(booking.property_details)
@@ -143,7 +147,7 @@ export function BookingDetailsDialog({
   // Parse images if available
   const getImages = () => {
     if (!booking.images) return []
-    
+
     try {
       if (typeof booking.images === 'string') {
         return JSON.parse(booking.images)
@@ -164,7 +168,7 @@ export function BookingDetailsDialog({
       total_amount: totalAmount,
       updated_at: new Date().toISOString()
     }
-    
+
     onUpdatePayment(booking, updatedPaymentData)
     setIsEditingPayment(false)
   }
@@ -181,6 +185,9 @@ export function BookingDetailsDialog({
   const propertyDetails = getPropertyDetails()
   const priceBreakdown = getPriceBreakdown()
   const images = getImages()
+
+  const [activeImage, setActiveImage] = useState(images[0]);
+
 
   const currentTotal = Number(totalAmount || booking.total_amount || 0)
   const currentPaid = Number(paymentAmount || 0)
@@ -243,7 +250,7 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Created On</h3>
                 <p className="text-base flex items-center gap-2">
                   <FileText className="h-4 w-4 text-gray-400" />
-                  {formatDate(booking.created_at || booking.modified)} 
+                  {formatDate(booking.created_at || booking.modified)}
                   {booking.created_at || booking.modified ? ` at ${formatTime(booking.created_at || booking.modified)}` : ""}
                 </p>
               </div>
@@ -252,7 +259,7 @@ export function BookingDetailsDialog({
                 <h3 className="text-sm font-medium text-gray-500">Last Updated</h3>
                 <p className="text-base flex items-center gap-2">
                   <FileText className="h-4 w-4 text-gray-400" />
-                  {formatDate(booking.updated_at || booking.modified)} 
+                  {formatDate(booking.updated_at || booking.modified)}
                   {booking.updated_at || booking.modified ? ` at ${formatTime(booking.updated_at || booking.modified)}` : ""}
                 </p>
               </div>
@@ -377,7 +384,7 @@ export function BookingDetailsDialog({
                   <Button
                     variant="destructive"
                     className="w-full sm:w-auto"
-                    onClick={() => onUpdateStatus(booking, "rejected")}
+                    onClick={() => onCancelWithRefund && onCancelWithRefund(booking)}
                   >
                     <CalendarX className="mr-2 h-4 w-4" />
                     Reject Booking
@@ -390,7 +397,7 @@ export function BookingDetailsDialog({
                   <Button
                     variant="destructive"
                     className="w-full sm:w-auto"
-                    onClick={() => onUpdateStatus(booking, "cancelled")}
+                    onClick={() => onCancelWithRefund && onCancelWithRefund(booking)}
                   >
                     <CalendarX className="mr-2 h-4 w-4" />
                     Cancel Booking
@@ -443,25 +450,26 @@ export function BookingDetailsDialog({
 
           <TabsContent value="images" className="mt-4 sm:mt-6 space-y-4">
             {images && images.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {images.map((imageUrl: string, index: number) => (
-                  <div key={index} className="border rounded-md overflow-hidden">
-                    <div className="aspect-video relative">
-                      <img 
-                        src={imageUrl} 
-                        alt={`Booking image ${index + 1}`} 
-                        className="object-cover w-full h-full"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/api/placeholder/400/300";
-                          (e.target as HTMLImageElement).alt = "Image failed to load";
-                        }}
+              <div className="grid gap-4">
+                <div>
+                  <img
+                    className="h-auto w-full max-w-full rounded-lg object-cover object-center md:h-[480px]"
+                    src={activeImage}
+                    alt=""
+                  />
+                </div>
+                <div className="grid grid-cols-5 gap-4">
+                  {images.map((image: any, index: number) => (
+                    <div key={index}>
+                      <img
+                        onClick={() => setActiveImage(image)}
+                        src={image}
+                        className="h-20 max-w-full cursor-pointer rounded-lg object-cover object-center"
+                        alt="gallery-image"
                       />
                     </div>
-                    <div className="p-2 bg-gray-50">
-                      <p className="text-sm text-gray-500 text-center">Image {index + 1}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-gray-50">
@@ -483,9 +491,9 @@ export function BookingDetailsDialog({
                     {paymentStatus ? paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1) : "Unknown"}
                   </Badge>
                   {!isEditingPayment && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setIsEditingPayment(true)}
                       className="h-8 px-2"
                     >
@@ -494,7 +502,7 @@ export function BookingDetailsDialog({
                   )}
                 </div>
               </div>
-              
+
               {!isEditingPayment ? (
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between">
@@ -536,7 +544,7 @@ export function BookingDetailsDialog({
                       </select>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-end gap-4">
                     <div className="space-y-2 flex-1">
                       <Label htmlFor="total-amount">Total Amount</Label>
@@ -555,7 +563,7 @@ export function BookingDetailsDialog({
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2 flex-1">
                       <Label htmlFor="amount-paid">Amount Paid</Label>
                       <div className="relative">
@@ -575,43 +583,43 @@ export function BookingDetailsDialog({
                       </div>
                     </div>
                   </div>
-                  
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="adjustment-reason">Adjustment Reason</Label>
-                    <select
-                      id="adjustment-reason"
-                      className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mt-1"
-                      onChange={(e) => {
-                        const reason = e.target.value;
-                        if (reason) {
-                          setPaymentNote(reason === "other" ? "" : reason);
-                        }
-                      }}
-                    >
-                      <option value="">-- Select a reason --</option>
-                      <option value="Price adjustment due to service change">Price adjustment - Service change</option>
-                      <option value="Additional services requested">Additional services requested</option>
-                      <option value="Discount applied">Discount applied</option>
-                      <option value="Special promotion">Special promotion</option>
-                      <option value="Correction of billing error">Correction of billing error</option>
-                      <option value="Customer accommodation">Customer accommodation</option>
-                      <option value="other">Other (specify below)</option>
-                    </select>
+
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="adjustment-reason">Adjustment Reason</Label>
+                      <select
+                        id="adjustment-reason"
+                        className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mt-1"
+                        onChange={(e) => {
+                          const reason = e.target.value;
+                          if (reason) {
+                            setPaymentNote(reason === "other" ? "" : reason);
+                          }
+                        }}
+                      >
+                        <option value="">-- Select a reason --</option>
+                        <option value="Price adjustment due to service change">Price adjustment - Service change</option>
+                        <option value="Additional services requested">Additional services requested</option>
+                        <option value="Discount applied">Discount applied</option>
+                        <option value="Special promotion">Special promotion</option>
+                        <option value="Correction of billing error">Correction of billing error</option>
+                        <option value="Customer accommodation">Customer accommodation</option>
+                        <option value="other">Other (specify below)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="payment-note">Payment Note</Label>
+                      <textarea
+                        id="payment-note"
+                        value={paymentNote}
+                        onChange={(e) => setPaymentNote(e.target.value)}
+                        placeholder="Add a note about this payment adjustment..."
+                        className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[80px]"
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="payment-note">Payment Note</Label>
-                    <textarea
-                      id="payment-note"
-                      value={paymentNote}
-                      onChange={(e) => setPaymentNote(e.target.value)}
-                      placeholder="Add a note about this payment adjustment..."
-                      className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[80px]"
-                    />
-                  </div>
-                </div>
-                  
+
                   <div className="pt-2 flex justify-end gap-2">
                     <Button
                       variant="outline"
@@ -637,7 +645,7 @@ export function BookingDetailsDialog({
               <>
                 {/* Quick Payment Actions */}
                 <div className="flex flex-col sm:flex-row gap-2">
-                                      <Button
+                  <Button
                     variant="outline"
                     className="flex-1"
                     onClick={() => {
@@ -650,8 +658,8 @@ export function BookingDetailsDialog({
                     <DollarSign className="mr-2 h-4 w-4 text-green-500" />
                     Mark as Fully Paid
                   </Button>
-                  
-                                      <Button
+
+                  <Button
                     variant="outline"
                     className="flex-1"
                     onClick={() => {
@@ -659,17 +667,17 @@ export function BookingDetailsDialog({
                       const remainingBalance = Number(totalAmount || booking.total_amount || 0) - Number(paymentAmount || 0);
                       const halfRemaining = remainingBalance / 2;
                       const newAmount = (Number(paymentAmount || 0) + halfRemaining).toFixed(2);
-                      
+
                       setPaymentAmount(newAmount);
                       setPaymentStatus("partially_paid");
                       setPaymentNote("Added partial payment");
                       setIsEditingPayment(true);
                     }}
                   >
-                    <Plus className="mr-2 h-4 w-4 text-blue-500" />
+                    <Plus className="mr-2 h-4 w-4 text-green-500" />
                     Add Partial Payment
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     className="flex-1"
@@ -684,11 +692,11 @@ export function BookingDetailsDialog({
                     Refund Payment
                   </Button>
                 </div>
-                
+
                 {/* Payment History Section (Future Enhancement) */}
-                <div className="space-y-2 p-4 border rounded-md">
+                {/* <div className="space-y-2 p-4 border rounded-md">
                   <h3 className="text-sm font-medium text-gray-500">Payment History</h3>
-                  
+
                   {booking.payment_history && booking.payment_history.length > 0 ? (
                     <div className="mt-2 space-y-2">
                       {booking.payment_history.map((payment: any, index: number) => (
@@ -709,7 +717,7 @@ export function BookingDetailsDialog({
                   ) : (
                     <p className="text-gray-500 mt-2 italic">No payment history available</p>
                   )}
-                </div>
+                </div> */}
               </>
             )}
 
@@ -743,13 +751,13 @@ export function BookingDetailsDialog({
               {booking.assigned_staff || (booking.assignedStaff && booking.assignedStaff.length > 0) ? (
                 <ul className="mt-2 space-y-2">
                   {/* Handle both string and array formats */}
-                  {Array.isArray(booking.assigned_staff || booking.assignedStaff) ? 
+                  {Array.isArray(booking.assigned_staff || booking.assignedStaff) ?
                     (booking.assigned_staff || booking.assignedStaff).map((staff: string, index: number) => (
                       <li key={index} className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-400" />
                         <span>{staff}</span>
                       </li>
-                    )) : 
+                    )) :
                     <li className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-400" />
                       <span>{booking.assigned_staff || booking.assignedStaff}</span>
@@ -767,8 +775,8 @@ export function BookingDetailsDialog({
                   onClick={() => onAssignStaff(booking)}
                 >
                   <User className="mr-2 h-4 w-4" />
-                  {booking.assigned_staff || (booking.assignedStaff && booking.assignedStaff.length > 0) 
-                    ? "Reassign Staff" 
+                  {booking.assigned_staff || (booking.assignedStaff && booking.assignedStaff.length > 0)
+                    ? "Reassign Staff"
                     : "Assign Staff"}
                 </Button>
               )}

@@ -11,7 +11,7 @@ interface Booking {
 export function BookingHistoryTable({ bookings }: { bookings: Booking[] }) {
   const statusClasses = {
     Finished: "bg-green-100 text-green-500",
-    Upcoming: "bg-blue-100 text-blue-500",
+    Upcoming: "bg-green-100 text-green-500",
     Canceled: "bg-red-100 text-red-500",
     "Waiting Approval": "bg-yellow-100 text-yellow-500",
   };
