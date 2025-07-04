@@ -47,7 +47,7 @@ export function ServiceInfoForm({
                         <SelectItem value="loading" disabled>Loading services...</SelectItem>
                       ) : services.filter(service => service.status === "active").map((service) => (
                         <SelectItem key={service.id} value={service.id}>
-                          {service.name} - {formatCurrency(parseFloat(String(service.price)))}
+                          {service.name} 
                         </SelectItem>
                       ))}
                     </SelectContent>

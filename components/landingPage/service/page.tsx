@@ -62,7 +62,7 @@ function Service() {
             </div>
           </div>
 
-          <div>
+          {/* <div>
             <Button 
               className="bg-green-500 hover:bg-green-600 text-white rounded-md py-2 px-4 flex items-center"
               asChild
@@ -71,7 +71,7 @@ function Service() {
                 EXPLORE <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-          </div>
+          </div> */}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

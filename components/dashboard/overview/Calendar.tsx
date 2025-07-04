@@ -12,6 +12,10 @@ interface CalendarComponentProps {
 
 export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
   const [date, setDate] = React.useState<Date | null | undefined>(new Date());
+  
+  // Get today's date with time set to 00:00:00 to ensure proper comparison
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const handleDateSelect = (e: { value: Date | null | undefined }) => {
     const selectedDate = e.value;
@@ -50,6 +54,11 @@ export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
         width: 2rem;
         height: 2rem;
       }
+      /* Style for disabled past dates */
+      .p-disabled {
+        opacity: 0.4 !important;
+        cursor: not-allowed !important;
+      }
     `;
     document.head.appendChild(style);
     
@@ -69,6 +78,8 @@ export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
           dateFormat="yy-mm-dd"
           className="w-full h-full"
           panelClassName="h-full"
+          minDate={today}
+          disabledDays={[]}
         />
       </div>
     </div>

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
           name: defaultSenderName
         },
         to: [{ email: user_email }],
-        subject: '🎉 Final Booking Confirmation - Spotless Transitions',
+        subject: '🎉 Final Booking Confirmation - Domu Clean',
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
             
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
               </div>
 
               <p style="text-align: center; color: #666; font-style: italic; margin-top: 30px;">
-                Thank you for choosing Spotless Transitions!<br>
+                Thank you for choosing Domu Clean!<br>
                 We look forward to exceeding your expectations.
               </p>
             </div>
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
             <!-- Footer -->
             <div style="background-color: #343a40; color: white; padding: 20px; text-align: center; font-size: 14px;">
               <p style="margin: 0; opacity: 0.8;">
-                © 2024 Spotless Transitions. All rights reserved.
+                © 2024 Domu Clean. All rights reserved.
               </p>
             </div>
           </div>

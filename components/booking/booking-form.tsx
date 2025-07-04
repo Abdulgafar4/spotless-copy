@@ -496,11 +496,11 @@ export function MainBookingForm() {
                 </div>
               </div>
 
-              <PriceBreakdown
+              {/* <PriceBreakdown
                 priceBreakdown={priceBreakdown}
                 totalPrice={totalPrice}
                 formatCurrency={formatCurrency}
-              />
+              /> */}
 
               {/* Updated PaymentOptions component usage */}
               <PaymentOptions

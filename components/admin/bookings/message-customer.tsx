@@ -42,21 +42,21 @@ const messageTemplates = [
 const templateContent = {
   confirmation: `Dear {{customerName}},
 
-Thank you for booking with Spotless Transitions. Your booking for {{service}} on {{date}} at {{time}} has been confirmed.
+Thank you for booking with Domu Clean. Your booking for {{service}} on {{date}} at {{time}} has been confirmed.
 
 Please ensure someone is available to provide access to the property. If you have any questions or need to make changes, please contact us.
 
 Best regards,
-Spotless Transitions Team`,
+Domu Clean Team`,
 
   reminder: `Dear {{customerName}},
 
-This is a friendly reminder about your upcoming appointment with Spotless Transitions for {{service}} tomorrow, {{date}} at {{time}}.
+This is a friendly reminder about your upcoming appointment with Domu Clean for {{service}} tomorrow, {{date}} at {{time}}.
 
 Please ensure the property is accessible for our team. If you need to reschedule, please contact us as soon as possible.
 
 Best regards,
-Spotless Transitions Team`,
+Domu Clean Team`,
 
   cancellation: `Dear {{customerName}},
 
@@ -67,7 +67,7 @@ Please contact our customer service if you would like to reschedule or if you ha
 We apologize for any inconvenience.
 
 Best regards,
-Spotless Transitions Team`,
+Domu Clean Team`,
 
   reschedule: `Dear {{customerName}},
 
@@ -78,16 +78,16 @@ Please contact us at your earliest convenience to arrange a new date and time.
 We apologize for any inconvenience.
 
 Best regards,
-Spotless Transitions Team`,
+Domu Clean Team`,
 
   followup: `Dear {{customerName}},
 
-Thank you for choosing Spotless Transitions for your recent {{service}} on {{date}}.
+Thank you for choosing Domu Clean for your recent {{service}} on {{date}}.
 
 We hope you were satisfied with our service. We would appreciate your feedback to help us improve our services.
 
 Best regards,
-Spotless Transitions Team`,
+Domu Clean Team`,
 
   custom: ""
 };

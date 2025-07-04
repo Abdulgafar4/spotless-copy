@@ -5,7 +5,7 @@ import { Facebook, Instagram, Linkedin, X, ArrowRight, Send } from "lucide-react
 
 const Footer = () => {
   return (
-    <footer className="relative bg-gradient-to-br from-green-50 to-green-100 pt-24 pb-8 mt-20">
+    <footer className="relative bg-gradient-to-br from-green-50 to-green-100 pt-24 pb-8 mt-40">
       {/* Wave SVG at the top */}
       <div className="absolute top-0 left-0 w-full overflow-hidden" style={{ transform: 'translateY(-99%)' }}>
         <svg 
@@ -31,8 +31,8 @@ const Footer = () => {
           <div className="lg:col-span-1">
             <div className="mb-6">
               <Image
-                src="/new-logo.png"
-                alt="Spotless Transitions Logo"
+                src="/domu-logo.png"
+                alt="Domu Clean Logo"
                 width={180}
                 height={40}
                 priority
@@ -101,7 +101,7 @@ const Footer = () => {
 
         {/* Divider */}
         <div className="mt-16 pt-6 border-t border-green-200 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} Company Name - All rights reserved</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} Domu Clean - All rights reserved</p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <Link href="#services" className="text-sm text-gray-500 hover:text-green-600 transition-colors">
               SERVICES

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         sender: { 
           email: 'no-reply@brevo.com',
-          name: 'Spotless Transitions'
+          name: 'Domu Clean'
         },
         to: [{ email: user_email }],
         subject: isApproved 
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
               📧 Email: support@spotlesstransitions.com</p>
             </div>
             
-            <p>Thank you for choosing Spotless Transitions!</p>
+            <p>Thank you for choosing Domu Clean!</p>
           </div>
         `
       })

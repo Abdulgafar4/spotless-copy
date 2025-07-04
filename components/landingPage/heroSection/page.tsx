@@ -13,7 +13,7 @@ function Hero() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <Image
                 src="/assets/hero/icon.svg"
-                alt="Spotless Transitions Logo"
+                alt="Domu Clean Logo"
                 width={60}
                 height={60}
               />
@@ -22,7 +22,7 @@ function Hero() {
                   CLEANING SERVICES TAILORED TO YOUR NEEDS
                 </div>
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-                  <span className="text-green-500">SPOTLESS</span> TRANSITION
+                  <span className="text-green-500">DOMU</span> CLEAN
                 </h1>
               </div>
             </div>
@@ -49,7 +49,6 @@ function Hero() {
                 <div className="text-xs sm:text-sm mt-1">
                   <span className="text-gray-600">
                     BASED ON
-                    <span className="text-green-500 px-1">20K</span>
                     CLIENTS REVIEWS
                   </span>
                 </div>

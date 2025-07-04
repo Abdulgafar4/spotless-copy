@@ -112,7 +112,7 @@ export function FeedbackDetailsDialog({
                         <AvatarFallback>ST</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">Spotless Transitions</div>
+                        <div className="font-medium">Domu Clean</div>
                         <p className="text-gray-700 mt-2">{feedback.response}</p>
                       </div>
                     </div>

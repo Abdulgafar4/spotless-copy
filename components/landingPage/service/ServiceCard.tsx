@@ -55,7 +55,7 @@ const ServiceCard = ({
         <div className="absolute bottom-4 flex justify-center w-full">
           <div className="bg-white text-black text-sm rounded-full px-4 py-2 font-medium flex items-center gap-2">
             <span>
-              Minimum Price: <span className="text-green-500">{formatCurrency(price)}/hr</span>
+              Minimum Price: <span className="text-green-500">{formatCurrency(price)}</span>
             </span>
           </div>
         </div>

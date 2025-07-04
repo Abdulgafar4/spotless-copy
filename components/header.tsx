@@ -73,8 +73,8 @@ export default function Header() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 z-20">
             <Image
-              src="/new-logo.png"
-              alt="Spotless Transitions Logo"
+              src="/domu-logo.png"
+              alt="Domu Clean Logo"
               width={180}
               height={40}
               priority

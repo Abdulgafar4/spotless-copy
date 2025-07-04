@@ -57,9 +57,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <PageHeader title={title} breadcrumbs={breadcrumbs} />
         <main className="flex flex-col lg:flex-row gap-4">
           <div className="w-full lg:w-1/5 mt-5"> {/* Adjusted to 1/5 for sidebar */}
-            <SidebarCard pathname={pathname } />
+            <div className="sticky top-20 z-10"> {/* Added sticky positioning */}
+              <SidebarCard pathname={pathname} />
+            </div>
           </div>
-  
+
           <div className="w-full lg:w-4/5 mt-12"> {/* Adjusted to 4/5 for main content */}
             {children}
           </div>

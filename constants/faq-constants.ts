@@ -10,9 +10,9 @@ export const faqCategories = [
       icon: Briefcase,
       items: [
         {
-          question: "What services does Spotless Transitions offer?",
+          question: "What services does Domu Clean offer?",
           answer:
-            "Spotless Transitions offers a comprehensive range of cleaning and repair services, including move-out cleaning, move-in cleaning, appliance and kitchen cleaning, repairs and maintenance, painting and touch-ups, carpet and floor cleaning, window cleaning, and pre-sale home assistance.",
+            "Domu Clean offers a comprehensive range of cleaning and repair services, including move-out cleaning, move-in cleaning, appliance and kitchen cleaning, repairs and maintenance, painting and touch-ups, carpet and floor cleaning, window cleaning, and pre-sale home assistance.",
         },
         {
           question: "Do you provide same-day service?",

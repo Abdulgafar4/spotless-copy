@@ -21,7 +21,7 @@ function WhyUs() {
         <div className='space-y-2 sm:space-y-4'>
           <h3 className="text-lg sm:text-xl md:text-2xl font-medium text-gray-600">WHY US</h3>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-green-500">
-            WHY CHOOSE SPOTLESS TRANSITION
+            WHY CHOOSE DOMU CLEAN
           </h2>
         </div>
         <p className="text-gray-600 text-sm sm:text-base md:text-lg">
@@ -39,11 +39,11 @@ function WhyUs() {
           </Link>
         </Button>
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 sm:pt-8">
+        {/* <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 sm:pt-8">
           <StatCard value="7000+" label="HAPPY CLIENT" />
           <StatCard value="80+" label="OFFICES" />
           <StatCard value="40+" label="CANADIAN CITY" />
-        </div>
+        </div> */}
       </div>
       
       <div className="grid grid-cols-2 gap-4 sm:gap-6 md:gap-8 h-full px-4 sm:px-8 md:px-16 mt-6 lg:mt-0">

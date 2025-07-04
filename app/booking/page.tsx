@@ -27,7 +27,7 @@ export default function BookingPage() {
             <div className="space-y-8 mx-auto">
               <div>
                 <h2 className="text-3xl font-extrabold">
-                  <span className="text-[#10b981]">WHY SPOTLESS</span> TRANSITION
+                  <span className="text-[#10b981]">WHY DOMU</span> CLEAN
                 </h2>
                 <p className="text-gray-600 text-xl uppercase font-medium">CLEANING AND REPAIR SERVICES</p>
               </div>

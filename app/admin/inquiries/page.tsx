@@ -2,7 +2,7 @@ import InquiriesPage from "@/components/admin/inquiries/inquiries-page"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Customer Inquiries - Spotless Transitions Admin",
+  title: "Customer Inquiries - Domu Clean Admin",
   description: "Manage and respond to customer inquiries, questions, and feedback.",
 }
 

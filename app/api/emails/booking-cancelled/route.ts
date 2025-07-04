@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
             </p>
             
             <div style="background-color: #343a40; color: white; padding: 15px; text-align: center; border-radius: 8px; margin-top: 30px;">
-              <p style="margin: 0; font-size: 14px;">© 2024 Spotless Transitions. All rights reserved.</p>
+              <p style="margin: 0; font-size: 14px;">© 2024 Domu Clean. All rights reserved.</p>
             </div>
           </div>
         `

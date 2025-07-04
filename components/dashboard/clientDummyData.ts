@@ -5,7 +5,7 @@ export const clientNavigation = [
   { name: "My Profile", href: "/dashboard/profile", icon: User },
   { name: "Booking History", href: "/dashboard/booking-history", icon: FileText },
   { name: "Upcoming Appointment", href: "/dashboard/appointments", icon: Calendar },
-  { name: "Payment & Invoice", href: "/dashboard/payments", icon: CreditCard },
+  // { name: "Payment & Invoice", href: "/dashboard/payments", icon: CreditCard },
   { name: "Request Reschedule", href: "/dashboard/reschedule", icon: Clock },
   { name: "Request Cancellation", href: "/dashboard/cancellation", icon: X },
   { name: "Media Review", href: "/dashboard/media-review", icon: ImageIcon },

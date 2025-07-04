@@ -11,7 +11,7 @@ import { Toaster } from "sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Spotless Transitions - Cleaning & Repair Services",
+  title: "Domu Clean - Cleaning & Repair Services",
   description:
     "Professional move-in & move-out cleaning and repair services across multiple locations in Canada.",
 };

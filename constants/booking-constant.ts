@@ -27,4 +27,4 @@ export  const BRANCH_OPTIONS: StatusOption[] = [
   ]
   
 export const defaultSender =  'clever.metag@gmail.com';
-export const defaultSenderName = 'Spotless Transitions';
+export const defaultSenderName = 'Domu Clean';

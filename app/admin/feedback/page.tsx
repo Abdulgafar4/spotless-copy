@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import FeedbackPage from "@/components/admin/feedback/feedback-page"
 
 export const metadata: Metadata = {
-  title: "Customer Feedback - Spotless Transitions Admin",
+  title: "Customer Feedback - Domu Clean Admin",
   description: "View and manage customer reviews and feedback.",
 }
 

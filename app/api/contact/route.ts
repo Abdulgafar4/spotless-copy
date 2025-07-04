@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
             <!-- Footer -->
             <div style="background-color: #34495e; color: #bdc3c7; padding: 25px 30px; text-align: center; font-size: 13px;">
               <p style="margin: 0 0 10px 0;">
-                <strong style="color: #ffffff;">Spotless Transitions</strong> - Admin Notification System
+                <strong style="color: #ffffff;">Domu Clean</strong> - Admin Notification System
               </p>
               <p style="margin: 0; opacity: 0.8;">
                 This is an automated notification. Please do not reply to this email directly.

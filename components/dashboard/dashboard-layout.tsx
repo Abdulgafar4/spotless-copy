@@ -31,12 +31,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Calendar,
       current: pathname === "/dashboard/appointments",
     },
-    {
-      name: "PAYMENT & INVOICE",
-      href: "/dashboard/payments",
-      icon: CreditCard,
-      current: pathname === "/dashboard/payments",
-    },
+    // {
+    //   name: "PAYMENT & INVOICE",
+    //   href: "/dashboard/payments",
+    //   icon: CreditCard,
+    //   current: pathname === "/dashboard/payments",
+    // },
     {
       name: "REQUEST RESCHEDULE",
       href: "/dashboard/reschedule",
@@ -69,14 +69,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen mt-28">
-      <div className="md:container mx-auto px-4"> 
+      <div className="md:container mx-auto px-4">
         <PageHeader title={title} breadcrumbs={breadcrumbs} />
         <main className="flex flex-col lg:flex-row gap-4">
-          <div className="w-full lg:w-1/4 mt-16"> 
-            <ClientSidebar  pathname={pathname}/>
+          <div className="w-full lg:w-1/4 mt-16">
+            <div className="sticky top-20 z-10"> {/* Added sticky positioning */}
+              <ClientSidebar pathname={pathname} />
+            </div>
+
           </div>
-  
-          <div className="w-full lg:w-3/4 mt-16"> 
+
+          <div className="w-full lg:w-3/4 mt-16">
             {children}
           </div>
         </main>
