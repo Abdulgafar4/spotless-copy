@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
                       Call Customer
                     </a>
                   ` : ''}
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://spotlesstransitions.com'}/admin/" 
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://domuclean.com'}/admin/" 
                      style="background-color: #95a5a6; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: 500; font-size: 14px;">
                     View Dashboard
                   </a>

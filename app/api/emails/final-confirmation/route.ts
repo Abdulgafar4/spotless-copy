@@ -113,8 +113,8 @@ export async function POST(req: NextRequest) {
                 <h4 style="color: #333; margin-top: 0;">Need Help?</h4>
                 <p style="color: #666; margin: 10px 0;">
                   📞 <strong>Phone:</strong> (555) 123-4567<br>
-                  📧 <strong>Email:</strong> support@spotlesstransitions.com<br>
-                  🌐 <strong>Website:</strong> www.spotlesstransitions.com
+                  📧 <strong>Email:</strong> support@domuclean.com<br>
+                  🌐 <strong>Website:</strong> www.domuclean.com
                 </p>
               </div>
 

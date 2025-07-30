@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
             <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
               <p><strong>Need Help?</strong></p>
               <p>📞 Phone: (555) 123-4567<br>
-              📧 Email: support@spotlesstransitions.com</p>
+              📧 Email: support@domuclean.com</p>
             </div>
             
             <p>Thank you for choosing Domu Clean!</p>

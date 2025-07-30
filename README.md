@@ -1,6 +1,6 @@
-# Spotless
+# domuclean
 
-Spotless is a sleek, full-stack booking web app built with Next.js 14 (App Router), Tailwind CSS, and TypeScript. Designed for speed and scalability, Spotless handles authentication, bookings, and user dashboard features out of the box.
+Domu Cleanis a sleek, full-stack booking web app built with Next.js 14 (App Router), Tailwind CSS, and TypeScript. Designed for speed and scalability, Domu Cleanhandles authentication, bookings, and user dashboard features out of the box.
 
 ## 🔧 Tech Stack
 - **Framework**: [Next.js 14](https://nextjs.org/)

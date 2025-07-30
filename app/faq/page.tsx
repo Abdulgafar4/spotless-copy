@@ -206,7 +206,7 @@ export default function FAQPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Email us at</p>
-                      <p className="font-medium">support@spotless.com</p>
+                      <p className="font-medium">support@domuclean.com</p>
                     </div>
                   </div>
                 </div>

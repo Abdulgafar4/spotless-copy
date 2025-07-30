@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
               <p style="color: #1976d2;">If you have questions about this cancellation or refund:</p>
               <p style="color: #1976d2;">
                 📞 <strong>Phone:</strong> (555) 123-4567<br>
-                📧 <strong>Email:</strong> support@spotlesstransitions.com<br>
+                📧 <strong>Email:</strong> support@domuclean.com<br>
                 🕒 <strong>Hours:</strong> Mon-Fri 9AM-6PM
               </p>
             </div>
