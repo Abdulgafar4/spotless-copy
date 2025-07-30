@@ -2,29 +2,87 @@
 
 import * as React from "react";
 import { Calendar } from 'primereact/calendar';
+import { useUnavailableDates } from '@/hooks/use-unavailable-dates';
 // Import PrimeReact styles
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 
 interface CalendarComponentProps {
   onSelectDate: (date: string) => void;
+  selectedBranch?: string; // Optional branch filter
 }
 
-export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
+export function CalendarComponent({ onSelectDate, selectedBranch }: CalendarComponentProps) {
   const [date, setDate] = React.useState<Date | null | undefined>(new Date());
+  const { getUnavailableDatesForBranch, loading } = useUnavailableDates();
   
   // Get today's date with time set to 00:00:00 to ensure proper comparison
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  
+
+  // Get unavailable dates for the selected branch
+  const unavailableDates = React.useMemo(() => {
+    if (loading) return [];
+    
+    const unavailableDateStrings = getUnavailableDatesForBranch(selectedBranch);
+
+    console.log(unavailableDateStrings);
+    return unavailableDateStrings.map(dateString => {
+      const date = new Date(dateString);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    });
+  }, [getUnavailableDatesForBranch, selectedBranch, loading]);
+
   const handleDateSelect = (e: { value: Date | null | undefined }) => {
     const selectedDate = e.value;
+    
+    // Check if the selected date is unavailable
+    if (selectedDate) {
+      const dateString = selectedDate.toISOString().split('T')[0];
+      const isUnavailable = unavailableDates.some(unavailableDate => 
+        unavailableDate.toISOString().split('T')[0] === dateString
+      );
+      
+      if (isUnavailable) {
+        // Don't allow selection of unavailable dates
+        return;
+      }
+    }
+    
     setDate(selectedDate);
     if (selectedDate) {
       // Format date as YYYY-MM-DD string for the booking system
       const formattedDate = selectedDate.toISOString().split('T')[0];
       onSelectDate(formattedDate);
     }
+  };
+
+  // Custom date template to style unavailable dates
+  const dateTemplate = (date: any) => {
+    const currentDate = new Date(date.year, date.month, date.day);
+    const isUnavailable = unavailableDates.some(unavailableDate => {
+      const unavailableDateStr = unavailableDate.toISOString().split('T')[0];
+      const currentDateStr = currentDate.toISOString().split('T')[0];
+      return unavailableDateStr === currentDateStr;
+    });
+
+    const isPast = currentDate < today;
+
+    if (isUnavailable && !isPast) {
+      return (
+        <span 
+          className="unavailable-date" 
+          title="This date is not available for booking"
+        >
+          {date.day}
+        </span>
+      );
+    }
+
+    return date.day;
   };
 
   React.useEffect(() => {
@@ -53,19 +111,52 @@ export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
       .p-datepicker table td > span {
         width: 2rem;
         height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
       }
       /* Style for disabled past dates */
       .p-disabled {
         opacity: 0.4 !important;
         cursor: not-allowed !important;
       }
+      /* Style for unavailable dates */
+      .p-datepicker table td > span.unavailable-date {
+        background-color: #fee2e2 !important;
+        color: #dc2626 !important;
+        cursor: not-allowed !important;
+        text-decoration: line-through;
+        font-weight: bold;
+      }
+      .p-datepicker table td > span.unavailable-date:hover {
+        background-color: #fecaca !important;
+      }
+      /* Prevent clicking on unavailable dates */
+      .p-datepicker table td:has(> span.unavailable-date) {
+        pointer-events: none !important;
+      }
     `;
     document.head.appendChild(style);
     
     return () => {
-      document.head.removeChild(style);
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
     };
   }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full h-[400px] flex flex-col">
+        <div className="w-full h-full flex items-center justify-center rounded-md border shadow bg-white p-2">
+          <div className="text-center text-gray-500">
+            Loading calendar...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[400px] flex flex-col">
@@ -79,6 +170,8 @@ export function CalendarComponent({ onSelectDate }: CalendarComponentProps) {
           className="w-full h-full"
           panelClassName="h-full"
           minDate={today}
+          disabledDates={unavailableDates}
+          dateTemplate={dateTemplate}
           disabledDays={[]}
         />
       </div>

@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/admin", icon: BarChart3 },
     { name: "Branches", href: "/admin/branches", icon: Building },
-    // { name: "Scheduling", href: "/admin/scheduling", icon: Calendar },
+    { name: "Scheduling", href: "/admin/scheduling", icon: Calendar },
     // { name: "Customers", href: "/admin/customers", icon: Users },
     { name: "Inquiries", href: "/admin/inquiries", icon: Mail },
     { name: "Reports", href: "/admin/reports", icon: FileText },

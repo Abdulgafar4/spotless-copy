@@ -30,12 +30,12 @@ export const getAdminNavigation = (pathname?: string) => [
     },
     { name: "Reschedule", href: "/admin/reschedule", icon: Clock, current: "/admin/reschedule" },
     { name: "Cancellations", href: "/admin/cancellations", icon: ClipboardCheck, current: "/admin/cancellations" },
-    // {
-    //   name: "Scheduling",
-    //   href: "/admin/scheduling",
-    //   icon: Calendar,
-    //   current: pathname === "/admin/scheduling",
-    // },
+    {
+      name: "Scheduling",
+      href: "/admin/scheduling",
+      icon: Calendar,
+      current: pathname === "/admin/scheduling",
+    },
     {
       name: "Bookings",
       href: "/admin/bookings",

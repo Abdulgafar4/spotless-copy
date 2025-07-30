@@ -404,7 +404,7 @@ export function MainBookingForm() {
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Preferred Date</FormLabel>
+                  {/* <FormLabel>Preferred Date</FormLabel> */}
                   <FormControl>
                     <div className="bg-white rounded-lg border">
                       <CalendarComponent

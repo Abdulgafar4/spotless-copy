@@ -1,468 +1,452 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { format, addDays, startOfWeek, addWeeks, subWeeks } from "date-fns"
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import {
+  PlusCircle,
+  Search,
+  Edit,
+  Trash2,
   ChevronLeft,
   ChevronRight,
-  Plus,
-  Filter,
-  CalendarIcon
-} from "lucide-react"
+  AlertCircle,
+  Calendar,
+  Repeat,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import AdminLayout from "@/components/admin/admin-layout"
-import { AddAppointmentDialog } from "@/components/admin/scheduling/addAppointment"
-import { mockAppointments } from '../adminDummyData';
-import { AppointmentCard } from "./appointmentCard"
-import { CalendarDay } from "./calendarDay"
-import { WeekNavigator } from "./weekNavigator"
-import { StatusBadge } from "./statusBadge"
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import AdminLayout from "@/components/admin/admin-layout";
+import { AddUnavailableDateDialog } from "@/components/admin/scheduling/addUnavailableDate";
+import { DeleteUnavailableDateDialog } from "@/components/admin/scheduling/deleteUnavailableDate";
+import { useUnavailableDates } from "@/hooks/use-unavailable-dates";
+import { UnavailableDate } from "@/model/unavailable-date-schema";
+import { toast } from "sonner";
+import FilterDropdown from "@/components/shared/shared-filter";
+import { useAdminBranches } from "@/hooks/use-branch";
+import { formatShortDate } from "@/lib/utils";
 
-function getTimeSlotsForDay(start: number = 8, end: number = 18): string[] {
-  const slots = [];
-  for (let hour = start; hour < end; hour++) {
-    slots.push(`${hour}:00`);
-    slots.push(`${hour}:30`);
-  }
-  return slots;
-}
-
-function getDaysInMonth(date: Date): Date[] {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = new Date(year, month + 1, 0);
-  
-  // Get first day of calendar (might be previous month)
-  const firstDayOfCalendar = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
-  
-  // Get last day of calendar (might be next month)
-  const lastDayOfCalendar = addDays(startOfWeek(lastDayOfMonth, { weekStartsOn: 1 }), 34); // 5 weeks (35 days)
-  
-  const days = [];
-  let current = firstDayOfCalendar;
-  
-  while (current <= lastDayOfCalendar) {
-    days.push(new Date(current));
-    current = addDays(current, 1);
-  }
-  
-  return days;
-}
-
-const TimeSlotAppointment = ({ appointment }: { appointment: Appointment }) => (
-  <div className="bg-green-50 border-l-4 border-green-500 p-2 mb-1 rounded-r text-sm hover:bg-green-100 transition-colors">
-    <div className="font-medium truncate">{appointment.title}</div>
-    <div className="text-xs text-gray-500">{appointment.customer}</div>
-    <StatusBadge status={appointment.status} />
-  </div>
-);
-const DayView = ({ 
-  date, 
-  appointments, 
-  onTimeSlotClick 
-}: { 
-  date: Date, 
-  appointments: Appointment[], 
-  onTimeSlotClick: (date: Date, time: string) => void 
-}) => {
-  const timeSlots = getTimeSlotsForDay();
-  const appointmentsByTime: Record<string, Appointment[]> = {};
-  
-  // Group appointments by time
-  appointments.forEach(appointment => {
-    const timeKey = appointment.time.split(':').slice(0, 2).join(':');
-    if (!appointmentsByTime[timeKey]) {
-      appointmentsByTime[timeKey] = [];
-    }
-    appointmentsByTime[timeKey].push(appointment);
-  });
-  
+// Branch badge component
+const BranchBadge: React.FC<{ branch: string }> = ({ branch }) => {
+  const isAllBranches = branch === "All Branches";
   return (
-    <div className="border rounded-md">
-      <div className="text-center p-4 border-b bg-gray-50">
-        <h3 className="font-medium">{format(date, "EEEE, MMMM d, yyyy")}</h3>
-      </div>
-      <div className="divide-y">
-        {timeSlots.map(time => {
-          const [hour, minute] = time.split(':');
-          const slotTime = new Date(date);
-          slotTime.setHours(parseInt(hour), parseInt(minute), 0);
-          
-          return (
-            <div 
-              key={time} 
-              className="flex py-2 hover:bg-gray-50 cursor-pointer transition-colors"
-              onClick={() => onTimeSlotClick(date, time)}
-            >
-              <div className="w-20 px-4 text-right text-sm text-gray-500">{time}</div>
-              <div className="flex-1 px-4 min-h-12">
-                {appointmentsByTime[time]?.map(appointment => (
-                  <TimeSlotAppointment key={appointment.id} appointment={appointment} />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const MonthCalendarDay = ({ 
-  day, 
-  isCurrentMonth, 
-  isToday, 
-  appointments, 
-  onDayClick 
-}: { 
-  day: Date, 
-  isCurrentMonth: boolean,
-  isToday: boolean, 
-  appointments: Appointment[], 
-  onDayClick: (date: Date) => void 
-}) => {
-  return (
-    <div 
-      className={`min-h-24 p-1 border ${isCurrentMonth ? 'bg-white' : 'bg-gray-50'}`}
-      onClick={() => onDayClick(day)}
+    <Badge
+      className={
+        isAllBranches
+          ? "bg-purple-100 text-purple-800 hover:bg-purple-100"
+          : "bg-blue-100 text-blue-800 hover:bg-blue-100"
+      }
     >
-      <div className={`
-        text-right p-1 
-        ${!isCurrentMonth ? 'text-gray-400' : ''}
-        ${isToday ? 'font-bold' : ''}
-      `}>
-        {format(day, "d")}
-      </div>
-      <div className="overflow-y-auto max-h-20">
-        {appointments.slice(0, 3).map((appointment) => (
-          <div 
-            key={appointment.id} 
-            className="bg-green-50 border-l-4 border-green-500 p-1 mb-1 text-xs rounded-r truncate"
-          >
-            {appointment.time} {appointment.title}
-          </div>
-        ))}
-        {appointments.length > 3 && (
-          <div className="text-xs text-gray-500 pl-1">+{appointments.length - 3} more</div>
-        )}
-      </div>
+      {branch}
+    </Badge>
+  );
+};
+
+// Recurring indicator component
+const RecurringIndicator: React.FC<{
+  isRecurring: boolean;
+  recurringType?: string | null;
+}> = ({ isRecurring, recurringType }) => {
+  if (!isRecurring) return null;
+
+  return (
+    <div className="flex items-center text-sm text-gray-500">
+      <Repeat className="h-4 w-4 mr-1" />
+      {recurringType &&
+        recurringType?.charAt(0).toUpperCase() + recurringType?.slice(1)}
     </div>
   );
 };
 
-
-const ListViewGroup = ({ date, appointments }: { date: string, appointments: Appointment[] }) => (
-  <div className="space-y-2">
-    <h3 className="font-medium flex items-center">
-      <CalendarIcon className="h-4 w-4 mr-2" />
-      {format(new Date(date), "EEEE, MMMM d, yyyy")}
-    </h3>
-    <div className="grid gap-3">
-      {appointments.map(appointment => (
-        <AppointmentCard key={appointment.id} appointment={appointment} />
-      ))}
-    </div>
+// Action buttons component
+const ActionButtons: React.FC<{
+  onEdit: () => void;
+  onDelete: () => void;
+}> = ({ onEdit, onDelete }) => (
+  <div className="flex justify-end gap-2">
+    <Button variant="outline" size="sm" onClick={onEdit}>
+      <Edit className="h-4 w-4" />
+    </Button>
+    <Button
+      variant="outline"
+      size="sm"
+      className="text-red-500 hover:bg-red-50"
+      onClick={onDelete}
+    >
+      <Trash2 className="h-4 w-4" />
+    </Button>
   </div>
 );
 
+// Empty state component
+const EmptyState: React.FC<{ loading: boolean; error: string | null }> = ({
+  loading,
+  error,
+}) => (
+  <div className="flex flex-col items-center justify-center py-10 w-full">
+    <AlertCircle className="h-10 w-10 text-gray-400 mb-4" />
+    <h3 className="text-lg font-medium">No unavailable dates found</h3>
+    {!loading ? (
+      <p className="text-gray-500 text-center mt-2">
+        No unavailable dates match your search criteria. Try adjusting your
+        search or add a new unavailable date.
+      </p>
+    ) : (
+      <div className="flex justify-center p-8">
+        Loading unavailable dates...
+      </div>
+    )}
 
-// Main Component
-export default function SchedulingPage() {
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedBranch, setSelectedBranch] = useState("all")
-  const [selectedView, setSelectedView] = useState("week")
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [selectedTime, setSelectedTime] = useState<string | null>(null)
+    {error && <div className="text-red-600 p-8 mt-4">Error: {error}</div>}
+  </div>
+);
 
-  // Computed values
-  const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Start on Monday
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startDate, i))
-  const monthDays = getDaysInMonth(currentDate)
-  const today = format(new Date(), "yyyy-MM-dd")
+// Pagination component
+const Pagination: React.FC<{
+  currentPage: number;
+  totalPages: number;
+  itemsPerPage: number;
+  totalItems: number;
+  startIndex: number;
+  setCurrentPage: (page: number) => void;
+}> = ({
+  currentPage,
+  totalPages,
+  itemsPerPage,
+  totalItems,
+  startIndex,
+  setCurrentPage,
+}) => (
+  <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <p className="text-sm text-gray-500">
+      Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+      <span className="font-medium">
+        {Math.min(startIndex + itemsPerPage, totalItems)}
+      </span>{" "}
+      of <span className="font-medium">{totalItems}</span> unavailable dates
+    </p>
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCurrentPage(currentPage - 1)}
+        disabled={currentPage === 1}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCurrentPage(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  </CardFooter>
+);
 
-  // Filter appointments based on selected branch
-  const filteredAppointments = selectedBranch === "all"
-    ? appointments
-    : appointments.filter(appointment => appointment.branch.toLowerCase().includes(selectedBranch.toLowerCase()))
+// SearchBar component
+const SearchBar: React.FC<{
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+}> = ({ searchTerm, setSearchTerm }) => (
+  <div className="relative flex-1">
+    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+    <Input
+      placeholder="Search by reason or branch..."
+      className="pl-8"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+  </div>
+);
 
-  // Group appointments by date
-  const appointmentsByDate = filteredAppointments.reduce((acc: Record<string, Appointment[]>, appointment) => {
-    if (!acc[appointment.date]) {
-      acc[appointment.date] = []
+// UnavailableDatesTable component
+const UnavailableDatesTable: React.FC<{
+  unavailableDates: UnavailableDate[];
+  onEdit: (date: UnavailableDate) => void;
+  onDelete: (date: UnavailableDate) => void;
+}> = ({ unavailableDates, onEdit, onDelete }) => (
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Date</TableHead>
+        <TableHead>Branch</TableHead>
+        <TableHead className="hidden md:table-cell">Reason</TableHead>
+        <TableHead className="hidden sm:table-cell">Type</TableHead>
+        <TableHead className="text-right">Actions</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {unavailableDates.map((unavailableDate) => (
+        <TableRow key={unavailableDate.id}>
+          <TableCell className="font-medium">
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+              {/* {format(new Date(unavailableDate.date), "MMM d, yyyy")} */}
+              {formatShortDate(unavailableDate.date)}
+            </div>
+          </TableCell>
+          <TableCell>
+            <BranchBadge branch={unavailableDate.branch} />
+          </TableCell>
+          <TableCell className="hidden md:table-cell">
+            {unavailableDate.reason}
+          </TableCell>
+          <TableCell className="hidden sm:table-cell">
+            <RecurringIndicator
+              isRecurring={unavailableDate.is_recurring}
+              recurringType={unavailableDate.recurring_type}
+            />
+            {!unavailableDate.is_recurring && (
+              <span className="text-sm text-gray-500">One-time</span>
+            )}
+          </TableCell>
+          <TableCell className="text-right">
+            <ActionButtons
+              onEdit={() => onEdit(unavailableDate)}
+              onDelete={() => onDelete(unavailableDate)}
+            />
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+);
+
+export default function UnavailableDatesPage() {
+  const {
+    unavailableDates,
+    loading,
+    error,
+    fetchUnavailableDates,
+    createUnavailableDate,
+    updateUnavailableDate,
+    deleteUnavailableDate,
+  } = useUnavailableDates();
+
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedUnavailableDate, setSelectedUnavailableDate] =
+    useState<UnavailableDate | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+  const [branchFilter, setBranchFilter] = useState<string>("All");
+
+  // Fetch unavailable dates when component mounts
+  useEffect(() => {
+    fetchUnavailableDates();
+  }, [fetchUnavailableDates]);
+
+  // Filter unavailable dates based on search term and branch
+  const filteredUnavailableDates = unavailableDates.filter(
+    (unavailableDate) => {
+      const matchesSearch =
+        unavailableDate.reason
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        unavailableDate.branch
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        format(new Date(unavailableDate.date), "MMM d, yyyy")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+
+      const matchesBranch =
+        branchFilter === "All" ||
+        unavailableDate.branch === branchFilter ||
+        (branchFilter === "All Branches" &&
+          unavailableDate.branch === "All Branches");
+
+      return matchesSearch && matchesBranch;
     }
-    acc[appointment.date].push(appointment)
-    return acc
-  }, {})
+  );
 
-  // Get appointments for a specific date
-  const getAppointmentsForDate = (date: Date): Appointment[] => {
-    const dateString = format(date, "yyyy-MM-dd");
-    return appointmentsByDate[dateString] || [];
-  }
+  // Pagination
+  const totalPages = Math.ceil(filteredUnavailableDates.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUnavailableDates = filteredUnavailableDates.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
-  // Handlers for navigation
-  const handleDateChange = (amount: number, unit: 'day' | 'week' | 'month') => {
-    if (unit === 'day') {
-      setCurrentDate(addDays(currentDate, amount));
-    } else if (unit === 'week') {
-      setCurrentDate(amount > 0 ? addWeeks(currentDate, amount) : subWeeks(currentDate, Math.abs(amount)));
-    } else if (unit === 'month') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + amount, 1));
+  // Handle adding a new unavailable date
+  const handleAddUnavailableDate = async (newUnavailableDate: any) => {
+    try {
+      await createUnavailableDate(newUnavailableDate);
+      fetchUnavailableDates(); // Refresh the list
+      setIsAddDialogOpen(false);
+      toast.success("Unavailable date added successfully");
+    } catch (err) {
+      console.error("Failed to create unavailable date:", err);
+      toast.error("Failed to add unavailable date");
     }
-  }
+  };
 
-  const handleAddAppointment = (newAppointment: Omit<Appointment, 'id'>) => {
-    const id = appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) + 1 : 1
-    setAppointments([...appointments, { ...newAppointment, id }])
-    setIsAddDialogOpen(false)
-  }
+  // Handle editing an existing unavailable date
+  const handleEditUnavailableDate = (unavailableDate: UnavailableDate) => {
+    setSelectedUnavailableDate(unavailableDate);
+    setIsAddDialogOpen(true);
+  };
 
-  const handleDayClick = (date: Date) => {
-    setSelectedDate(date)
-    setSelectedTime(null)
-    setIsAddDialogOpen(true)
-  }
+  // Handle updating an unavailable date
+  const handleUpdateUnavailableDate = async (updatedUnavailableDate: any) => {
+    try {
+      await updateUnavailableDate(
+        updatedUnavailableDate.id,
+        updatedUnavailableDate
+      );
+      fetchUnavailableDates(); // Refresh the list
+      setIsAddDialogOpen(false);
+      setSelectedUnavailableDate(null);
+      toast.success("Unavailable date updated successfully");
+    } catch (err) {
+      console.error("Failed to update unavailable date:", err);
+      toast.error("Failed to update unavailable date");
+    }
+  };
 
-  const handleTimeSlotClick = (date: Date, time: string) => {
-    setSelectedDate(date)
-    setSelectedTime(time)
-    setIsAddDialogOpen(true)  
-  }
+  // Handle deleting an unavailable date
+  const handleDeleteClick = (unavailableDate: UnavailableDate) => {
+    setSelectedUnavailableDate(unavailableDate);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (selectedUnavailableDate) {
+      try {
+        await deleteUnavailableDate(selectedUnavailableDate.id);
+        fetchUnavailableDates(); // Refresh the list
+        setIsDeleteDialogOpen(false);
+        setSelectedUnavailableDate(null);
+        toast.success("Unavailable date deleted successfully");
+      } catch (err) {
+        console.error("Failed to delete unavailable date:", err);
+        toast.error("Failed to delete unavailable date");
+      }
+    }
+  };
 
   const openAddDialog = () => {
-    setSelectedDate(new Date())
-    setSelectedTime(null)
-    setIsAddDialogOpen(true)
-  }
-
-  const renderCalendarView = () => {
-    if (selectedView === "day") {
-      return (
-        <DayView 
-          date={currentDate}
-          appointments={getAppointmentsForDate(currentDate)}
-          onTimeSlotClick={handleTimeSlotClick}
-        />
-      );
-    }
-    
-    if (selectedView === "week") {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-7 gap-1">
-          {weekDays.map((day) => {
-            const dateString = format(day, "yyyy-MM-dd");
-            const isToday = dateString === today;
-            const dayAppointments = appointmentsByDate[dateString] || [];
-            
-            return (
-              <CalendarDay 
-                key={dateString} 
-                day={day} 
-                isToday={isToday} 
-                appointments={dayAppointments}
-                onDayClick={handleDayClick}
-              />
-            );
-          })}
-        </div>
-      );
-    }
-    
-    if (selectedView === "month") {
-      return (
-        <div>
-          <div className="text-center mb-2 font-medium">
-            {format(currentDate, "MMMM yyyy")}
-          </div>
-          <div className="grid grid-cols-7 gap-px bg-gray-200">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-              <div key={day} className="bg-gray-100 text-center py-2 text-sm font-medium">
-                {day}
-              </div>
-            ))}
-            
-            {monthDays.map((day) => {
-              const dateString = format(day, "yyyy-MM-dd");
-              const isToday = dateString === today;
-              const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-              const dayAppointments = appointmentsByDate[dateString] || [];
-              
-              return (
-                <MonthCalendarDay
-                  key={dateString}
-                  day={day}
-                  isCurrentMonth={isCurrentMonth}
-                  isToday={isToday}
-                  appointments={dayAppointments}
-                  onDayClick={handleDayClick}
-                />
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-    
-    if (selectedView === "list") {
-      // Make sure we show dates with appointments ordered by date
-      const sortedDates = Object.keys(appointmentsByDate).sort((a, b) => 
-        new Date(a).getTime() - new Date(b).getTime()
-      );
-      
-      return (
-        <div className="space-y-4">
-          {sortedDates.length > 0 ? (
-            sortedDates.map(date => (
-              <ListViewGroup 
-                key={date} 
-                date={date} 
-                appointments={appointmentsByDate[date]} 
-              />
-            ))
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              No appointments found for the selected filter.
-            </div>
-          )}
-        </div>
-      );
-    }
-    
-    return <div className="p-4 text-center">This view is not implemented yet</div>;
+    setSelectedUnavailableDate(null);
+    setIsAddDialogOpen(true);
   };
+
+  const { branches } = useAdminBranches();
+
+  // Create filter options from actual branches
+  const branchFilterOptions = [
+    "All",
+    "All Branches",
+    ...branches.map((branch) => branch.name),
+  ];
 
   return (
     <AdminLayout>
-      <div className="flex flex-col space-y-6 px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Service Scheduling</h1>
-          <Button onClick={openAddDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Add Appointment</span>
-            <span className="sm:hidden">Add</span>
+      <div className="flex flex-col space-y-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Unavailable Dates Management
+          </h1>
+          <Button onClick={openAddDialog} className="w-full sm:w-auto">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Unavailable Date
           </Button>
         </div>
 
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle>Schedule Calendar</CardTitle>
-                <CardDescription>
-                  View and manage all scheduled appointments
-                </CardDescription>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Select Branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Branches</SelectItem>
-                    <SelectItem value="toronto downtown">Toronto Downtown</SelectItem>
-                    <SelectItem value="mississauga">Mississauga</SelectItem>
-                    <SelectItem value="north york">North York</SelectItem>
-                    <SelectItem value="ottawa central">Ottawa Central</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </div>
+            <CardTitle>Service Unavailability</CardTitle>
+            <CardDescription>
+              Manage dates when services are not available. These dates will be
+              disabled in the customer booking calendar.
+            </CardDescription>
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <SearchBar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+              />
+              <FilterDropdown
+                label="Filter by Branch"
+                options={branchFilterOptions}
+                onSelect={(filter) => {
+                  setBranchFilter(filter);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}
+              />
             </div>
           </CardHeader>
+
           <CardContent>
-            <Tabs defaultValue="week" className="mb-6" onValueChange={setSelectedView}>
-              <TabsList className="grid grid-cols-4 w-full sm:w-auto">
-                <TabsTrigger value="day">Day</TabsTrigger>
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-                <TabsTrigger value="list">List</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* Dynamic navigation based on current view */}
-            {selectedView === "day" && (
-              <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => handleDateChange(-1, 'day')}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => handleDateChange(1, 'day')}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <h3 className="text-lg font-medium ml-2">
-                    {format(currentDate, "MMMM d, yyyy")}
-                  </h3>
-                </div>
-                <Button variant="outline" onClick={() => setCurrentDate(new Date())}>
-                  Today
-                </Button>
+            {filteredUnavailableDates.length > 0 ? (
+              <div className="overflow-x-auto">
+                <UnavailableDatesTable
+                  unavailableDates={paginatedUnavailableDates}
+                  onEdit={handleEditUnavailableDate}
+                  onDelete={handleDeleteClick}
+                />
               </div>
+            ) : (
+              <EmptyState loading={loading} error={error} />
             )}
-
-            {selectedView === "week" && (
-              <WeekNavigator 
-                startDate={startDate}
-                onPrevWeek={() => handleDateChange(-1, 'week')}
-                onNextWeek={() => handleDateChange(1, 'week')}
-                onToday={() => setCurrentDate(new Date())}
-              />
-            )}
-
-            {selectedView === "month" && (
-              <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => handleDateChange(-1, 'month')}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => handleDateChange(1, 'month')}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <h3 className="text-lg font-medium ml-2">
-                    {format(currentDate, "MMMM yyyy")}
-                  </h3>
-                </div>
-                <Button variant="outline" onClick={() => setCurrentDate(new Date())}>
-                  Today
-                </Button>
-              </div>
-            )}
-
-            {renderCalendarView()}
           </CardContent>
+
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredUnavailableDates.length}
+              startIndex={startIndex}
+              setCurrentPage={setCurrentPage}
+            />
+          )}
         </Card>
       </div>
 
-      <AddAppointmentDialog
+      <AddUnavailableDateDialog
         isOpen={isAddDialogOpen}
         setIsOpen={setIsAddDialogOpen}
-        onAdd={handleAddAppointment}
-        selectedDate={selectedDate}
-        selectedTime={selectedTime}
+        onAdd={handleAddUnavailableDate}
+        onUpdate={handleUpdateUnavailableDate}
+        unavailableDate={selectedUnavailableDate}
+      />
+
+      <DeleteUnavailableDateDialog
+        isOpen={isDeleteDialogOpen}
+        setIsOpen={setIsDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        dateInfo={
+          selectedUnavailableDate
+            ? {
+                date: format(
+                  new Date(selectedUnavailableDate.date),
+                  "MMM d, yyyy"
+                ),
+                reason: selectedUnavailableDate.reason,
+                branch: selectedUnavailableDate.branch,
+              }
+            : undefined
+        }
       />
     </AdminLayout>
-  )
+  );
 }
