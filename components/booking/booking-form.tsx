@@ -409,6 +409,7 @@ export function MainBookingForm() {
                     <div className="bg-white rounded-lg border">
                       <CalendarComponent
                         onSelectDate={(date) => field.onChange(date)}
+                        selectedBranch={form.getValues("branch")}
                       />
                     </div>
                   </FormControl>

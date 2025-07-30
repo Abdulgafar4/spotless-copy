@@ -20,18 +20,20 @@ export function CalendarComponent({ onSelectDate, selectedBranch }: CalendarComp
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  
-
-  // Get unavailable dates for the selected branch
+  // Get unavailable dates for the selected branch - only if branch is selected
   const unavailableDates = React.useMemo(() => {
-    if (loading) return [];
+    // Don't load unavailable dates if no branch is selected
+    if (loading || !selectedBranch) return [];
     
     const unavailableDateStrings = getUnavailableDatesForBranch(selectedBranch);
 
-    console.log(unavailableDateStrings);
+    
     return unavailableDateStrings.map(dateString => {
-      const date = new Date(dateString);
+      // Safe parsing - split the string and create date in local timezone
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // month is 0-indexed
       date.setHours(0, 0, 0, 0);
+      
       return date;
     });
   }, [getUnavailableDatesForBranch, selectedBranch, loading]);
@@ -40,7 +42,7 @@ export function CalendarComponent({ onSelectDate, selectedBranch }: CalendarComp
     const selectedDate = e.value;
     
     // Check if the selected date is unavailable
-    if (selectedDate) {
+    if (selectedDate && unavailableDates.length > 0) {
       const dateString = selectedDate.toISOString().split('T')[0];
       const isUnavailable = unavailableDates.some(unavailableDate => 
         unavailableDate.toISOString().split('T')[0] === dateString
@@ -62,6 +64,11 @@ export function CalendarComponent({ onSelectDate, selectedBranch }: CalendarComp
 
   // Custom date template to style unavailable dates
   const dateTemplate = (date: any) => {
+    // Only apply unavailable styling if branch is selected
+    if (!selectedBranch || unavailableDates.length === 0) {
+      return date.day;
+    }
+
     const currentDate = new Date(date.year, date.month, date.day);
     const isUnavailable = unavailableDates.some(unavailableDate => {
       const unavailableDateStr = unavailableDate.toISOString().split('T')[0];
@@ -146,12 +153,27 @@ export function CalendarComponent({ onSelectDate, selectedBranch }: CalendarComp
     };
   }, []);
 
+  // Show different states based on loading and branch selection
   if (loading) {
     return (
       <div className="w-full h-[400px] flex flex-col">
         <div className="w-full h-full flex items-center justify-center rounded-md border shadow bg-white p-2">
           <div className="text-center text-gray-500">
             Loading calendar...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedBranch) {
+    return (
+      <div className="w-full h-[400px] flex flex-col">
+        <div className="w-full h-full flex items-center justify-center rounded-md border shadow bg-white p-2">
+          <div className="text-center text-gray-500">
+            <div className="mb-2">📍</div>
+            <div className="font-medium">Select a branch first</div>
+            <div className="text-sm">Choose a branch to see available dates</div>
           </div>
         </div>
       </div>

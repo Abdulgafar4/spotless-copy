@@ -27,6 +27,20 @@ const formatDateData = (dateData: UnavailableDateFormValues) => ({
   end_date: dateData.end_date?.toISOString().split('T')[0] || null,
 })
 
+export const parseUnavailableDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('-').map(Number)
+  const date = new Date(year, month - 1, day) // month is 0-indexed
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+export const formatDateForStorage = (date: Date): string => {
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 // Helper function to calculate recurring dates
 const calculateRecurringDates = (unavailableDate: UnavailableDate): string[] => {
   if (!unavailableDate.is_recurring || !unavailableDate.recurring_type) {
@@ -35,9 +49,17 @@ const calculateRecurringDates = (unavailableDate: UnavailableDate): string[] => 
 
   const today = new Date()
   const currentYear = today.getFullYear()
-  const dateObj = new Date(unavailableDate.date)
+  
+  // FIX: Safe date parsing for the original date
+  const [year, month, day] = unavailableDate.date.split('-').map(Number)
+  const dateObj = new Date(year, month - 1, day) // month is 0-indexed
+  
   const endDate = unavailableDate.end_date 
-    ? new Date(unavailableDate.end_date) 
+    ? (() => {
+        // FIX: Safe parsing for end date too
+        const [endYear, endMonth, endDay] = unavailableDate.end_date.split('-').map(Number)
+        return new Date(endYear, endMonth - 1, endDay)
+      })()
     : new Date(currentYear + 5, 11, 31) // Default 5 years ahead
 
   const recurringDates: string[] = []
@@ -47,7 +69,11 @@ const calculateRecurringDates = (unavailableDate: UnavailableDate): string[] => 
       for (let year = currentYear; year <= endDate.getFullYear(); year++) {
         const yearlyDate = new Date(year, dateObj.getMonth(), dateObj.getDate())
         if (yearlyDate >= today && yearlyDate <= endDate) {
-          recurringDates.push(yearlyDate.toISOString().split('T')[0])
+          // FIX: Format date safely without timezone conversion
+          const yyyy = yearlyDate.getFullYear()
+          const mm = String(yearlyDate.getMonth() + 1).padStart(2, '0')
+          const dd = String(yearlyDate.getDate()).padStart(2, '0')
+          recurringDates.push(`${yyyy}-${mm}-${dd}`)
         }
       }
       break
@@ -56,7 +82,11 @@ const calculateRecurringDates = (unavailableDate: UnavailableDate): string[] => 
       for (let month = 0; month < 24; month++) { // Next 24 months
         const monthlyDate = new Date(currentYear, today.getMonth() + month, dateObj.getDate())
         if (monthlyDate >= today && monthlyDate <= endDate) {
-          recurringDates.push(monthlyDate.toISOString().split('T')[0])
+          // FIX: Format date safely
+          const yyyy = monthlyDate.getFullYear()
+          const mm = String(monthlyDate.getMonth() + 1).padStart(2, '0')
+          const dd = String(monthlyDate.getDate()).padStart(2, '0')
+          recurringDates.push(`${yyyy}-${mm}-${dd}`)
         }
       }
       break
@@ -67,7 +97,11 @@ const calculateRecurringDates = (unavailableDate: UnavailableDate): string[] => 
         const weeklyDate = new Date(today)
         weeklyDate.setDate(today.getDate() + (week * 7) + (dayOfWeek - today.getDay()))
         if (weeklyDate >= today && weeklyDate <= endDate) {
-          recurringDates.push(weeklyDate.toISOString().split('T')[0])
+          // FIX: Format date safely
+          const yyyy = weeklyDate.getFullYear()
+          const mm = String(weeklyDate.getMonth() + 1).padStart(2, '0')
+          const dd = String(weeklyDate.getDate()).padStart(2, '0')
+          recurringDates.push(`${yyyy}-${mm}-${dd}`)
         }
       }
       break
@@ -104,7 +138,7 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
       setLoading(true)
       clearError()
       
-      console.log('Fetching unavailable dates from Supabase...')
+      // console.log('Fetching unavailable dates from Supabase...')
       
       let query = supabase
         .from('unavailable_dates')
@@ -119,11 +153,10 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
       const { data, error: supabaseError } = await query
       
       if (supabaseError) {
-        console.error('Supabase error:', supabaseError)
         throw new Error(supabaseError.message)
       }
       
-      console.log('Fetched data:', data?.length || 0, 'records')
+      // console.log('Fetched data:', data || 0, 'records')
       setUnavailableDates(data || [])
     } catch (err) {
       handleError(err, 'Failed to fetch unavailable dates')
@@ -139,7 +172,6 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
       clearError()
       
       const payload = formatDateData(dateData)
-      console.log('Creating unavailable date:', payload)
       
       const { data, error: supabaseError } = await supabase
         .from('unavailable_dates')
@@ -148,11 +180,9 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
         .single()
       
       if (supabaseError) {
-        console.error('Supabase error:', supabaseError)
         throw new Error(supabaseError.message)
       }
       
-      console.log('Created successfully:', data)
       
       // Optimistically update local state
       if (data) {
@@ -175,7 +205,6 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
       clearError()
       
       const payload = formatDateData(dateData)
-      console.log('Updating unavailable date:', id, payload)
       
       const { data, error: supabaseError } = await supabase
         .from('unavailable_dates')
@@ -185,11 +214,9 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
         .single()
       
       if (supabaseError) {
-        console.error('Supabase error:', supabaseError)
         throw new Error(supabaseError.message)
       }
       
-      console.log('Updated successfully:', data)
       
       // Optimistically update local state
       if (data) {
@@ -213,7 +240,6 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
       setLoading(true)
       clearError()
       
-      console.log('Deleting unavailable date:', id)
       
       const { error: supabaseError } = await supabase
         .from('unavailable_dates')
@@ -221,11 +247,9 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
         .eq('id', id)
       
       if (supabaseError) {
-        console.error('Supabase error:', supabaseError)
         throw new Error(supabaseError.message)
       }
       
-      console.log('Deleted successfully')
       
       // Optimistically update local state
       setUnavailableDates(prev => prev.filter(date => date.id !== id))
@@ -241,7 +265,7 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
   const getUnavailableDatesForBranch = useCallback((branch?: string): string[] => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-
+    
     return unavailableDates
       .filter(unavailableDate => {
         // Filter by branch
@@ -252,14 +276,26 @@ export function useUnavailableDates(): UseUnavailableDatesReturn {
           
           if (!branchMatches) return false
         }
-
+  
         // Only include future dates or recurring dates
-        const dateObj = new Date(unavailableDate.date)
+        // FIX: Parse date safely to avoid timezone issues
+        const [year, month, day] = unavailableDate.date.split('-').map(Number)
+        const dateObj = new Date(year, month - 1, day) // month is 0-indexed
+        dateObj.setHours(0, 0, 0, 0) // Ensure local midnight
+        
+        
+        
         return dateObj >= today || unavailableDate.is_recurring
       })
       .flatMap(unavailableDate => calculateRecurringDates(unavailableDate))
       .filter((dateString, index, arr) => arr.indexOf(dateString) === index) // Remove duplicates
-      .filter(dateString => new Date(dateString) >= today) // Only future dates
+      .filter(dateString => {
+        // FIX: Parse date safely here too
+        const [year, month, day] = dateString.split('-').map(Number)
+        const dateObj = new Date(year, month - 1, day)
+        dateObj.setHours(0, 0, 0, 0)
+        return dateObj >= today
+      }) // Only future dates
       .sort()
   }, [unavailableDates])
 

@@ -555,6 +555,7 @@ export function QuickBooking({ services, branches, submitBooking, loading }: Qui
           <h3 className="text-lg font-semibold mb-4">Select Date</h3>
           <CalendarComponent
             onSelectDate={(date: string) => handleInputChange("date", date)}
+            selectedBranch={bookingData.branch}
           />
           {errors.date && (
             <p className="text-sm text-red-500 mt-2">{errors.date}</p>
